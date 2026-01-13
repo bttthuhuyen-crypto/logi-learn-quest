@@ -15,6 +15,7 @@ import CourseEditor from "./pages/CourseEditor";
 import Community from "./pages/Community";
 import PostDetail from "./pages/PostDetail";
 import Calendar from "./pages/Calendar";
+import EventDetail from "./pages/EventDetail";
 import Members from "./pages/Members";
 import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="/community" element={<Community />} />
                 <Route path="/community/post/:postId" element={<PostDetail />} />
                 <Route path="/calendar" element={<Calendar />} />
+                <Route path="/calendar/event/:eventId" element={<EventDetail />} />
                 <Route path="/members" element={<Members />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/about" element={<About />} />

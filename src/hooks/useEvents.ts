@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 export type EventStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 export type EventRsvpStatus = 'going' | 'maybe' | 'not_going';
 export type EventLocationType = 'skool_call' | 'skool_webinar' | 'zoom' | 'google_meet' | 'in_person' | 'other';
+export type EventRecurrencePattern = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface Event {
   id: string;
@@ -23,6 +24,9 @@ export interface Event {
   attendee_count: number;
   creator_id: string | null;
   is_recurring: boolean;
+  recurrence_pattern?: EventRecurrencePattern | null;
+  recurrence_day_of_week?: number | null;
+  parent_event_id?: string | null;
   created_at: string;
   // Joined data
   creator?: {
@@ -318,6 +322,71 @@ export const useEventAttendees = (eventId: string) => {
       return attendeesWithProfiles as EventAttendee[];
     },
     enabled: !!eventId,
+  });
+};
+
+// Fetch single event by ID
+export const useEvent = (eventId: string | undefined) => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['event', eventId],
+    queryFn: async () => {
+      if (!eventId) return null;
+
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+
+      if (error) throw error;
+      
+      // Fetch creator info
+      const creator = await fetchCreatorInfo(data.creator_id);
+      
+      // Fetch user RSVP
+      let userRsvp = null;
+      if (user) {
+        const { data: rsvp } = await supabase
+          .from('event_attendees')
+          .select('status')
+          .eq('event_id', eventId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        userRsvp = rsvp?.status || null;
+      }
+
+      return {
+        ...data,
+        creator,
+        user_rsvp: userRsvp,
+      } as Event;
+    },
+    enabled: !!eventId,
+  });
+};
+
+// Fetch related events (recurring series)
+export const useRelatedEvents = (parentEventId: string | null | undefined) => {
+  return useQuery({
+    queryKey: ['related-events', parentEventId],
+    queryFn: async () => {
+      if (!parentEventId) return [];
+      
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, title, start_date, start_time, status')
+        .or(`parent_event_id.eq.${parentEventId},id.eq.${parentEventId}`)
+        .in('status', ['scheduled', 'live'])
+        .order('start_date', { ascending: true })
+        .order('start_time', { ascending: true })
+        .limit(5);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!parentEventId,
   });
 };
 
