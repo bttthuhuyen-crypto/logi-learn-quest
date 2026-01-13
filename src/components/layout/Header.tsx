@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, X, Globe, Shield, Handshake } from 'lucide-react';
+import { Search, Menu, X, Globe, Shield, Handshake, MessageCircle } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,6 +90,15 @@ export const Header = () => {
               className="w-64 pl-9 bg-muted/50"
             />
           </div>
+
+          {/* Messages Icon - Only for logged in users */}
+          {user && (
+            <Link to="/messages">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <MessageCircle className="h-4 w-4" />
+              </Button>
+            </Link>
+          )}
 
           {/* Notification Bell - Only for logged in users */}
           {user && <NotificationBell />}

@@ -1,14 +1,15 @@
 import { ReactNode } from 'react';
 import { Header } from './Header';
 
-interface MainLayoutProps {
+export interface MainLayoutProps {
   children: ReactNode;
+  hideHeader?: boolean;
 }
 
-export const MainLayout = ({ children }: MainLayoutProps) => {
+export const MainLayout = ({ children, hideHeader = false }: MainLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      {!hideHeader && <Header />}
       <main>{children}</main>
     </div>
   );

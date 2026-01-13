@@ -357,6 +357,30 @@ interface NotificationSettingsTranslations {
   settingsSaved: string;
 }
 
+interface MessengerTranslations {
+  title: string;
+  searchPlaceholder: string;
+  newMessage: string;
+  typeMessage: string;
+  send: string;
+  noConversations: string;
+  selectConversation: string;
+  messageDeleted: string;
+  you: string;
+  online: string;
+  offline: string;
+  sending: string;
+  sent: string;
+  delivered: string;
+  read: string;
+  attachFile: string;
+  attachImage: string;
+  yesterday: string;
+  today: string;
+  newConversation: string;
+  selectUser: string;
+}
+
 interface StatusTranslations {
   pending: string;
   approved: string;
@@ -406,6 +430,7 @@ export interface TranslationKeys {
   about: AboutTranslations;
   notifications: NotificationTranslations;
   notificationSettings: NotificationSettingsTranslations;
+  messenger: MessengerTranslations;
   status: StatusTranslations;
   errors: ErrorTranslations;
 }
@@ -753,6 +778,29 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       daily: 'Hàng ngày',
       weekly: 'Hàng tuần',
       settingsSaved: 'Đã lưu cài đặt',
+    },
+    messenger: {
+      title: 'Tin nhắn',
+      searchPlaceholder: 'Tìm kiếm cuộc trò chuyện...',
+      newMessage: 'Tin nhắn mới',
+      typeMessage: 'Nhập tin nhắn...',
+      send: 'Gửi',
+      noConversations: 'Chưa có cuộc trò chuyện nào',
+      selectConversation: 'Chọn một cuộc trò chuyện để bắt đầu',
+      messageDeleted: 'Tin nhắn đã bị xóa',
+      you: 'Bạn',
+      online: 'Đang hoạt động',
+      offline: 'Ngoại tuyến',
+      sending: 'Đang gửi...',
+      sent: 'Đã gửi',
+      delivered: 'Đã nhận',
+      read: 'Đã xem',
+      attachFile: 'Đính kèm file',
+      attachImage: 'Đính kèm ảnh',
+      yesterday: 'Hôm qua',
+      today: 'Hôm nay',
+      newConversation: 'Tạo cuộc trò chuyện mới',
+      selectUser: 'Tìm kiếm người dùng...',
     },
     status: {
       pending: 'Đang chờ',
@@ -1128,6 +1176,29 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       daily: 'Daily',
       weekly: 'Weekly',
       settingsSaved: 'Settings saved',
+    },
+    messenger: {
+      title: 'Messages',
+      searchPlaceholder: 'Search conversations...',
+      newMessage: 'New message',
+      typeMessage: 'Type a message...',
+      send: 'Send',
+      noConversations: 'No conversations yet',
+      selectConversation: 'Select a conversation to start',
+      messageDeleted: 'Message was deleted',
+      you: 'You',
+      online: 'Online',
+      offline: 'Offline',
+      sending: 'Sending...',
+      sent: 'Sent',
+      delivered: 'Delivered',
+      read: 'Read',
+      attachFile: 'Attach file',
+      attachImage: 'Attach image',
+      yesterday: 'Yesterday',
+      today: 'Today',
+      newConversation: 'New conversation',
+      selectUser: 'Search for users...',
     },
     status: {
       pending: 'Pending',

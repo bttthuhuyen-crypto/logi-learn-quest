@@ -20,6 +20,7 @@ import AffiliateDashboard from "./pages/AffiliateDashboard";
 import Profile from "./pages/Profile";
 import NotificationSettings from "./pages/NotificationSettings";
 import Notifications from "./pages/Notifications";
+import Messenger from "./pages/Messenger";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,8 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings/notifications" element={<NotificationSettings />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/messages" element={<Messenger />} />
+              <Route path="/messages/:conversationId" element={<Messenger />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
