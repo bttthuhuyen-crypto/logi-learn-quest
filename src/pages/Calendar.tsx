@@ -4,7 +4,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Calendar as CalendarIcon, Video, Clock } from 'lucide-react';
 
 const Calendar = () => {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
 
   const upcomingEvents = [
     {
@@ -13,7 +13,7 @@ const Calendar = () => {
       time: '19:00 - 21:00',
     },
     {
-      title: language === 'vi' ? 'Workshop: INCOTERMS 2020' : 'Workshop: INCOTERMS 2020',
+      title: 'Workshop: INCOTERMS 2020',
       date: '22/01/2026',
       time: '14:00 - 17:00',
     },
@@ -26,14 +26,8 @@ const Calendar = () => {
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <CalendarIcon className="h-10 w-10 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold mb-4">
-            {language === 'vi' ? 'Lịch sự kiện' : 'Calendar'}
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            {language === 'vi' 
-              ? 'Theo dõi các sự kiện và webinar sắp tới'
-              : 'Track upcoming events and webinars'}
-          </p>
+          <h1 className="text-3xl font-bold mb-4">{t.calendar.title}</h1>
+          <p className="text-muted-foreground text-lg">{t.calendar.subtitle}</p>
         </div>
 
         <div className="space-y-4">
