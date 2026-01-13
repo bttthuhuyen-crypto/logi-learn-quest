@@ -9,7 +9,8 @@ import { MembershipSettingsPanel } from '@/components/admin/MembershipSettingsPa
 import { AffiliateSettingsPanel } from '@/components/admin/AffiliateSettingsPanel';
 import { PayoutRequestsPanel } from '@/components/admin/PayoutRequestsPanel';
 import { ChatSettingsPanel } from '@/components/admin/ChatSettingsPanel';
-import { Shield, Users, Settings, Handshake, Wallet, MessageCircle } from 'lucide-react';
+import { PostReportsPanel } from '@/components/admin/PostReportsPanel';
+import { Shield, Users, Settings, Handshake, Wallet, MessageCircle, FileWarning } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const Admin = () => {
@@ -73,6 +74,10 @@ const Admin = () => {
               <Wallet className="h-4 w-4" />
               {language === 'vi' ? 'Yêu cầu rút tiền' : 'Payout Requests'}
             </TabsTrigger>
+            <TabsTrigger value="post-reports" className="flex items-center gap-2">
+              <FileWarning className="h-4 w-4" />
+              {language === 'vi' ? 'Báo cáo bài viết' : 'Post Reports'}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="requests">
@@ -93,6 +98,10 @@ const Admin = () => {
 
           <TabsContent value="payouts">
             <PayoutRequestsPanel />
+          </TabsContent>
+
+          <TabsContent value="post-reports">
+            <PostReportsPanel />
           </TabsContent>
         </Tabs>
       </div>

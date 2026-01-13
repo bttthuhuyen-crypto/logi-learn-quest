@@ -46,6 +46,7 @@ import {
 import { LevelBadge } from './LevelBadge';
 import { PostMediaPreview } from './PostMediaPreview';
 import { PostPollPreview } from './PostPollPreview';
+import { ReportPostModal } from './ReportPostModal';
 
 interface PostCardProps {
   post: Post;
@@ -68,6 +69,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
 
   const toggleLike = useTogglePostLike();
@@ -251,11 +253,15 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </>
               )}
 
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Flag className="h-4 w-4 mr-2" />
-                Báo cáo
-              </DropdownMenuItem>
+              {!isAuthor && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowReportModal(true)}>
+                    <Flag className="h-4 w-4 mr-2" />
+                    Báo cáo
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -377,6 +383,14 @@ export const PostCard: React.FC<PostCardProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Report modal */}
+      <ReportPostModal
+        open={showReportModal}
+        onOpenChange={setShowReportModal}
+        postId={post.id}
+        postTitle={post.title}
+      />
     </>
   );
 };
