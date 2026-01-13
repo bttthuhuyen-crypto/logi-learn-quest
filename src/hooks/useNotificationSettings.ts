@@ -16,6 +16,9 @@ export interface NotificationSettings {
   notify_mentions: boolean | null;
   notify_followers: boolean | null;
   notify_following_posts: boolean | null;
+  notify_messages: boolean | null;
+  notify_level_up: boolean | null;
+  notify_affiliate_commission: boolean | null;
   push_enabled: boolean | null;
   created_at: string;
   updated_at: string;
@@ -31,6 +34,9 @@ const defaultSettings = {
   notify_mentions: true,
   notify_followers: true,
   notify_following_posts: true,
+  notify_messages: true,
+  notify_level_up: true,
+  notify_affiliate_commission: true,
   push_enabled: false,
 };
 
@@ -101,11 +107,30 @@ export function useNotificationSettings() {
     updateMutation.mutate({ [key]: value });
   };
 
+  const disableAllNotifications = () => {
+    updateMutation.mutate({
+      email_digest: 'off',
+      email_notifications: 'off',
+      email_admin_announcements: false,
+      email_event_reminders: false,
+      notify_likes: false,
+      notify_comments: false,
+      notify_mentions: false,
+      notify_followers: false,
+      notify_following_posts: false,
+      notify_messages: false,
+      notify_level_up: false,
+      notify_affiliate_commission: false,
+      push_enabled: false,
+    });
+  };
+
   return {
     settings,
     isLoading,
     error,
     updateSetting,
+    disableAllNotifications,
     isUpdating: updateMutation.isPending,
   };
 }

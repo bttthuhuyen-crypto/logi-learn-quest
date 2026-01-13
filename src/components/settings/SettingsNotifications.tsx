@@ -5,11 +5,12 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
-import { Bell, Mail, Smartphone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Bell, Mail, BellOff, Save } from 'lucide-react';
 
 export const SettingsNotifications = () => {
   const { t } = useLanguage();
-  const { settings, isLoading, updateSetting, isUpdating } = useNotificationSettings();
+  const { settings, isLoading, updateSetting, disableAllNotifications, isUpdating } = useNotificationSettings();
 
   if (isLoading) {
     return (
@@ -17,7 +18,6 @@ export const SettingsNotifications = () => {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-32 w-full" />
       </div>
     );
   }
@@ -149,27 +149,49 @@ export const SettingsNotifications = () => {
               disabled={isUpdating}
             />
           </SettingRow>
-        </CardContent>
-      </Card>
 
-      {/* Push Notifications */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Smartphone className="h-5 w-5" />
-            {t.notificationSettings.pushSection}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SettingRow label={t.notificationSettings.pushEnabled}>
+          <SettingRow label={t.notificationSettings.newMessages}>
             <Switch
-              checked={settings?.push_enabled ?? false}
-              onCheckedChange={(checked) => updateSetting('push_enabled', checked)}
+              checked={settings?.notify_messages ?? true}
+              onCheckedChange={(checked) => updateSetting('notify_messages', checked)}
+              disabled={isUpdating}
+            />
+          </SettingRow>
+
+          <SettingRow label={t.notificationSettings.levelUp}>
+            <Switch
+              checked={settings?.notify_level_up ?? true}
+              onCheckedChange={(checked) => updateSetting('notify_level_up', checked)}
+              disabled={isUpdating}
+            />
+          </SettingRow>
+
+          <SettingRow label={t.notificationSettings.affiliateCommission}>
+            <Switch
+              checked={settings?.notify_affiliate_commission ?? true}
+              onCheckedChange={(checked) => updateSetting('notify_affiliate_commission', checked)}
               disabled={isUpdating}
             />
           </SettingRow>
         </CardContent>
       </Card>
+
+      {/* Bottom Actions */}
+      <div className="flex justify-between gap-4 pt-2">
+        <Button
+          variant="outline"
+          onClick={disableAllNotifications}
+          disabled={isUpdating}
+          className="gap-2"
+        >
+          <BellOff className="h-4 w-4" />
+          {t.notificationSettings.disableAll}
+        </Button>
+        <Button disabled={isUpdating} className="gap-2">
+          <Save className="h-4 w-4" />
+          {t.notificationSettings.saveChanges}
+        </Button>
+      </div>
     </div>
   );
 };
