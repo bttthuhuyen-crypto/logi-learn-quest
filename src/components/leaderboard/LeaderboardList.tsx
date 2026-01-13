@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Search, Trophy, Loader2, Users, ArrowDown } from 'lucide-react';
 import { useLeaderboard, LeaderboardPeriod } from '@/hooks/useLeaderboard';
-import { LeaderboardItem } from './LeaderboardItem';
+import { LeaderboardRow } from './LeaderboardRow';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { LevelConfig } from '@/utils/levelConfig';
@@ -230,10 +230,21 @@ export const LeaderboardList = forwardRef<LeaderboardListRef, LeaderboardListPro
                       highlightUserId === entry.userId && 'ring-2 ring-primary ring-offset-2 rounded-xl'
                     )}
                   >
-                    <LeaderboardItem 
-                      entry={entry} 
-                      isCurrentUser={entry.userId === user?.id}
+                    <LeaderboardRow
+                      rank={entry.rank}
+                      member={{
+                        userId: entry.userId,
+                        fullName: entry.fullName,
+                        avatarUrl: entry.avatarUrl,
+                        level: entry.level,
+                        levelName: entry.levelName,
+                        points: entry.points,
+                        isOnline: entry.onlineStatus === 'online',
+                        showOnlineStatus: entry.showOnlineStatus,
+                      }}
                       period={period}
+                      isCurrentUser={entry.userId === user?.id}
+                      variant="top3"
                     />
                   </div>
                 ))}
@@ -257,10 +268,21 @@ export const LeaderboardList = forwardRef<LeaderboardListRef, LeaderboardListPro
                       highlightUserId === entry.userId && 'ring-2 ring-primary ring-offset-2 rounded-xl'
                     )}
                   >
-                    <LeaderboardItem 
-                      entry={entry} 
-                      isCurrentUser={entry.userId === user?.id}
+                    <LeaderboardRow
+                      rank={entry.rank}
+                      member={{
+                        userId: entry.userId,
+                        fullName: entry.fullName,
+                        avatarUrl: entry.avatarUrl,
+                        level: entry.level,
+                        levelName: entry.levelName,
+                        points: entry.points,
+                        isOnline: entry.onlineStatus === 'online',
+                        showOnlineStatus: entry.showOnlineStatus,
+                      }}
                       period={period}
+                      isCurrentUser={entry.userId === user?.id}
+                      variant="normal"
                     />
                   </div>
                 ))}
