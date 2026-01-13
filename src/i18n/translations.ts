@@ -500,6 +500,7 @@ interface MemberProfileTranslations {
   activityJoin: string;
   activityCourse: string;
   activityLesson: string;
+  activityNoActivity: string;
   adminSection: string;
   adminSettings: string;
   memberSince: string;
@@ -1055,6 +1056,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       activityJoin: 'Đã tham gia cộng đồng',
       activityCourse: 'Đã hoàn thành khóa học "{title}"',
       activityLesson: 'Đã hoàn thành bài học "{title}"',
+      activityNoActivity: 'Không có hoạt động',
       adminSection: 'Quản trị viên',
       adminSettings: 'Cài đặt thành viên',
       memberSince: 'Thành viên từ',
@@ -1580,6 +1582,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       activityJoin: 'Joined the community',
       activityCourse: 'Completed course "{title}"',
       activityLesson: 'Completed lesson "{title}"',
+      activityNoActivity: 'No activity',
       adminSection: 'Admin Section',
       adminSettings: 'Member Settings',
       memberSince: 'Member since',
