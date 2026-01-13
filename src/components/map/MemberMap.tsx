@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
@@ -7,6 +7,7 @@ import { useUserLocations, UserLocation } from "@/hooks/useUserLocations";
 import { useMyLocation } from "@/hooks/useMyLocation";
 import { useAuth } from "@/contexts/AuthContext";
 import { MemberPopupContent, MemberPopupData } from "./MemberPopupContent";
+import { ClusterPopupContent } from "./ClusterPopupContent";
 import { MapControls } from "./MapControls";
 
 // Fix for default marker icons in Leaflet with webpack/vite
@@ -107,16 +108,87 @@ const convertToPopupData = (location: UserLocation): MemberPopupData => ({
   displayName: location.displayName,
 });
 
+// Get common location name from cluster members
+const getClusterLocationName = (members: UserLocation[]): string | undefined => {
+  const cities = members.map(m => m.city).filter(Boolean);
+  const uniqueCities = [...new Set(cities)];
+  
+  if (uniqueCities.length === 1) {
+    return uniqueCities[0] || undefined;
+  }
+  
+  const countries = members.map(m => m.country).filter(Boolean);
+  const uniqueCountries = [...new Set(countries)];
+  
+  if (uniqueCountries.length === 1) {
+    return uniqueCountries[0] || undefined;
+  }
+  
+  return undefined;
+};
+
+interface ClusterPopupState {
+  position: [number, number];
+  members: UserLocation[];
+}
+
 interface MemberMapProps {
   flyToLocation?: [number, number] | null;
   onUserLocationFound?: (lat: number, lng: number) => void;
 }
+
+// Component to handle cluster popup with map access
+const ClusterPopupHandler = ({
+  clusterPopup,
+  setClusterPopup,
+}: {
+  clusterPopup: ClusterPopupState | null;
+  setClusterPopup: (popup: ClusterPopupState | null) => void;
+}) => {
+  const map = useMap();
+
+  const handleViewAll = useCallback(() => {
+    if (clusterPopup) {
+      // Zoom in to uncluster the markers
+      map.flyTo(clusterPopup.position, map.getZoom() + 2);
+      setClusterPopup(null);
+    }
+  }, [clusterPopup, map, setClusterPopup]);
+
+  const handleMemberClick = useCallback((member: UserLocation) => {
+    setClusterPopup(null);
+    map.flyTo([member.latitude, member.longitude], 16);
+  }, [map, setClusterPopup]);
+
+  if (!clusterPopup) return null;
+
+  return (
+    <Popup
+      position={clusterPopup.position}
+      className="cluster-popup"
+      maxWidth={380}
+      minWidth={320}
+      eventHandlers={{
+        remove: () => setClusterPopup(null),
+      }}
+    >
+      <ClusterPopupContent
+        members={clusterPopup.members}
+        totalCount={clusterPopup.members.length}
+        locationName={getClusterLocationName(clusterPopup.members)}
+        onViewAll={handleViewAll}
+        onMemberClick={handleMemberClick}
+      />
+    </Popup>
+  );
+};
 
 export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps) => {
   const { user } = useAuth();
   const { data: locations, isLoading } = useUserLocations();
   const { myLocation } = useMyLocation();
   const [selectedMember, setSelectedMember] = useState<UserLocation | null>(null);
+  const [clusterPopup, setClusterPopup] = useState<ClusterPopupState | null>(null);
 
   // Default center (Vietnam)
   const defaultCenter: [number, number] = [16.0, 108.0];
@@ -132,6 +204,28 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
         icon: createMemberIcon(location.avatarUrl, location.isOnline),
       }));
   }, [locations, user?.id]);
+
+  // Handle cluster click
+  const handleClusterClick = useCallback((e: L.LeafletMouseEvent) => {
+    const cluster = e.layer as any;
+    
+    // Check if this is actually a cluster (has getAllChildMarkers method)
+    if (cluster && typeof cluster.getAllChildMarkers === 'function') {
+      const childMarkers = cluster.getAllChildMarkers();
+      
+      // Extract member data from markers
+      const clusterMembers: UserLocation[] = childMarkers
+        .map((marker: any) => marker.options?.memberData)
+        .filter(Boolean);
+      
+      if (clusterMembers.length > 0) {
+        setClusterPopup({
+          position: [e.latlng.lat, e.latlng.lng],
+          members: clusterMembers,
+        });
+      }
+    }
+  }, []);
 
   return (
     <MapContainer
@@ -161,12 +255,16 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
         showCoverageOnHover={false}
         spiderfyOnMaxZoom={true}
         disableClusteringAtZoom={16}
+        zoomToBoundsOnClick={false}
+        onClick={handleClusterClick}
       >
         {memberMarkers.map((location) => (
           <Marker
             key={location.id}
             position={[location.latitude, location.longitude]}
             icon={location.icon}
+            // @ts-ignore - Store member data for cluster access
+            memberData={location}
             eventHandlers={{
               click: () => setSelectedMember(location),
             }}
@@ -180,6 +278,12 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
           </Marker>
         ))}
       </MarkerClusterGroup>
+
+      {/* Cluster popup */}
+      <ClusterPopupHandler
+        clusterPopup={clusterPopup}
+        setClusterPopup={setClusterPopup}
+      />
 
       {/* Your location marker */}
       {myLocation && myLocation.latitude && myLocation.longitude && (
