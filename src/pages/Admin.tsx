@@ -8,7 +8,8 @@ import { MembershipRequestsPanel } from '@/components/admin/MembershipRequestsPa
 import { MembershipSettingsPanel } from '@/components/admin/MembershipSettingsPanel';
 import { AffiliateSettingsPanel } from '@/components/admin/AffiliateSettingsPanel';
 import { PayoutRequestsPanel } from '@/components/admin/PayoutRequestsPanel';
-import { Shield, Users, Settings, Handshake, Wallet } from 'lucide-react';
+import { ChatSettingsPanel } from '@/components/admin/ChatSettingsPanel';
+import { Shield, Users, Settings, Handshake, Wallet, MessageCircle } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const Admin = () => {
@@ -60,6 +61,10 @@ const Admin = () => {
               <Settings className="h-4 w-4" />
               {language === 'vi' ? 'Cài đặt câu hỏi' : 'Question Settings'}
             </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              {language === 'vi' ? 'Cài đặt Chat' : 'Chat Settings'}
+            </TabsTrigger>
             <TabsTrigger value="affiliate" className="flex items-center gap-2">
               <Handshake className="h-4 w-4" />
               {language === 'vi' ? 'Cài đặt Affiliate' : 'Affiliate Settings'}
@@ -76,6 +81,10 @@ const Admin = () => {
 
           <TabsContent value="settings">
             <MembershipSettingsPanel />
+          </TabsContent>
+
+          <TabsContent value="chat">
+            <ChatSettingsPanel />
           </TabsContent>
 
           <TabsContent value="affiliate">
