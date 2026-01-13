@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
-export type SortOption = 'default' | 'new' | 'top_week' | 'top_month';
+export type SortOption = 'default' | 'new' | 'top_week' | 'top_month' | 'following';
 
 export interface PostMedia {
   id: string;
@@ -65,14 +66,32 @@ interface UsePostsOptions {
   sort?: SortOption;
   limit?: number;
   pinnedOnly?: boolean;
+  followingOnly?: boolean;
 }
 
-export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly = false }: UsePostsOptions = {}) => {
+export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly = false, followingOnly = false }: UsePostsOptions = {}) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const query = useQuery({
-    queryKey: ['posts', categoryId, sort, pinnedOnly],
+    queryKey: ['posts', categoryId, sort, pinnedOnly, followingOnly, user?.id],
     queryFn: async () => {
+      // If following filter is active, get following IDs first
+      let followingIds: string[] = [];
+      if (followingOnly && user?.id) {
+        const { data: followingData } = await supabase
+          .from('user_follows')
+          .select('following_id')
+          .eq('follower_id', user.id);
+        
+        followingIds = followingData?.map(f => f.following_id) || [];
+        
+        // If user doesn't follow anyone, return empty
+        if (followingIds.length === 0) {
+          return [];
+        }
+      }
+
       let query = supabase
         .from('posts')
         .select(`
@@ -88,9 +107,15 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
         query = query.eq('is_pinned', true);
       }
 
+      // Filter by following users
+      if (followingOnly && followingIds.length > 0) {
+        query = query.in('author_id', followingIds);
+      }
+
       // Apply sorting
       switch (sort) {
         case 'new':
+        case 'following':
           query = query.order('created_at', { ascending: false });
           break;
         case 'top_week':

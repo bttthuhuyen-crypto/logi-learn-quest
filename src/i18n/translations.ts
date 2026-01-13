@@ -516,6 +516,23 @@ interface MemberProfileTranslations {
   notFound: string;
 }
 
+interface FollowTranslations {
+  follow: string;
+  following: string;
+  unfollow: string;
+  followers: string;
+  searchPlaceholder: string;
+  noResults: string;
+  newFollower: string;
+  newFollowerMessage: string;
+  newPostFromFollowing: string;
+  filterFollowing: string;
+  sortDefault: string;
+  sortNew: string;
+  sortTopWeek: string;
+  sortTopMonth: string;
+}
+
 export interface TranslationKeys {
   nav: NavTranslations;
   auth: AuthTranslations;
@@ -537,6 +554,7 @@ export interface TranslationKeys {
   errors: ErrorTranslations;
   paymentMethods: PaymentMethodsTranslations;
   memberProfile: MemberProfileTranslations;
+  follow: FollowTranslations;
 }
 
 export const translations: Record<'vi' | 'en', TranslationKeys> = {
@@ -1037,6 +1055,22 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       more: 'Nhiều',
       notFound: 'Không tìm thấy thành viên',
     },
+    follow: {
+      follow: 'Theo dõi',
+      following: 'Đang theo dõi',
+      unfollow: 'Bỏ theo dõi',
+      followers: 'Người theo dõi',
+      searchPlaceholder: 'Tìm kiếm...',
+      noResults: 'Không tìm thấy kết quả',
+      newFollower: 'Người theo dõi mới',
+      newFollowerMessage: '{name} đã bắt đầu theo dõi bạn',
+      newPostFromFollowing: '{name} đã đăng bài mới',
+      filterFollowing: 'Từ người theo dõi',
+      sortDefault: 'Mặc định',
+      sortNew: 'Mới nhất',
+      sortTopWeek: 'Top tuần',
+      sortTopMonth: 'Top tháng',
+    },
   },
   en: {
     nav: {
@@ -1534,6 +1568,22 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       less: 'Less',
       more: 'More',
       notFound: 'Member not found',
+    },
+    follow: {
+      follow: 'Follow',
+      following: 'Following',
+      unfollow: 'Unfollow',
+      followers: 'Followers',
+      searchPlaceholder: 'Search...',
+      noResults: 'No results found',
+      newFollower: 'New follower',
+      newFollowerMessage: '{name} started following you',
+      newPostFromFollowing: '{name} posted something new',
+      filterFollowing: 'From following',
+      sortDefault: 'Default',
+      sortNew: 'Newest',
+      sortTopWeek: 'Top week',
+      sortTopMonth: 'Top month',
     },
   },
 };
