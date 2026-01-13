@@ -622,11 +622,14 @@ export type Database = {
           email_event_reminders: boolean | null
           email_notifications: string | null
           id: string
+          notify_affiliate_commission: boolean | null
           notify_comments: boolean | null
           notify_followers: boolean | null
           notify_following_posts: boolean | null
+          notify_level_up: boolean | null
           notify_likes: boolean | null
           notify_mentions: boolean | null
+          notify_messages: boolean | null
           push_enabled: boolean | null
           updated_at: string
           user_id: string
@@ -638,11 +641,14 @@ export type Database = {
           email_event_reminders?: boolean | null
           email_notifications?: string | null
           id?: string
+          notify_affiliate_commission?: boolean | null
           notify_comments?: boolean | null
           notify_followers?: boolean | null
           notify_following_posts?: boolean | null
+          notify_level_up?: boolean | null
           notify_likes?: boolean | null
           notify_mentions?: boolean | null
+          notify_messages?: boolean | null
           push_enabled?: boolean | null
           updated_at?: string
           user_id: string
@@ -654,11 +660,14 @@ export type Database = {
           email_event_reminders?: boolean | null
           email_notifications?: string | null
           id?: string
+          notify_affiliate_commission?: boolean | null
           notify_comments?: boolean | null
           notify_followers?: boolean | null
           notify_following_posts?: boolean | null
+          notify_level_up?: boolean | null
           notify_likes?: boolean | null
           notify_mentions?: boolean | null
+          notify_messages?: boolean | null
           push_enabled?: boolean | null
           updated_at?: string
           user_id?: string

@@ -348,6 +348,9 @@ interface NotificationSettingsTranslations {
   mentions: string;
   followers: string;
   followingPosts: string;
+  newMessages: string;
+  levelUp: string;
+  affiliateCommission: string;
   pushSection: string;
   pushEnabled: string;
   off: string;
@@ -355,6 +358,8 @@ interface NotificationSettingsTranslations {
   daily: string;
   weekly: string;
   settingsSaved: string;
+  disableAll: string;
+  saveChanges: string;
 }
 
 interface MessengerTranslations {
@@ -760,17 +765,20 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
     },
     notificationSettings: {
       title: 'Cài đặt thông báo',
-      emailSection: 'Thông báo email',
-      emailDigest: 'Tổng hợp email',
-      emailNotifications: 'Thông báo email',
-      adminAnnouncements: 'Thông báo từ quản trị viên',
+      emailSection: 'THÔNG BÁO QUA EMAIL',
+      emailDigest: 'Tổng hợp bài viết',
+      emailNotifications: 'Thông báo hoạt động',
+      adminAnnouncements: 'Thông báo từ Admin',
       eventReminders: 'Nhắc nhở sự kiện',
-      inAppSection: 'Thông báo trong ứng dụng',
-      likes: 'Lượt thích',
-      comments: 'Bình luận',
-      mentions: 'Nhắc đến bạn',
+      inAppSection: 'THÔNG BÁO TRONG ỨNG DỤNG',
+      likes: 'Likes',
+      comments: 'Comments',
+      mentions: 'Mentions',
       followers: 'Người theo dõi mới',
-      followingPosts: 'Bài viết từ người bạn theo dõi',
+      followingPosts: 'Bài viết từ người theo dõi',
+      newMessages: 'Tin nhắn mới',
+      levelUp: 'Lên level',
+      affiliateCommission: 'Hoa hồng affiliate',
       pushSection: 'Thông báo đẩy',
       pushEnabled: 'Bật thông báo đẩy',
       off: 'Tắt',
@@ -778,6 +786,8 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       daily: 'Hàng ngày',
       weekly: 'Hàng tuần',
       settingsSaved: 'Đã lưu cài đặt',
+      disableAll: 'Tắt tất cả thông báo',
+      saveChanges: 'Lưu thay đổi',
     },
     messenger: {
       title: 'Tin nhắn',
@@ -1158,17 +1168,20 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
     },
     notificationSettings: {
       title: 'Notification Settings',
-      emailSection: 'Email Notifications',
-      emailDigest: 'Email Digest',
-      emailNotifications: 'Email Notifications',
+      emailSection: 'EMAIL NOTIFICATIONS',
+      emailDigest: 'Post Digest',
+      emailNotifications: 'Activity Notifications',
       adminAnnouncements: 'Admin Announcements',
       eventReminders: 'Event Reminders',
-      inAppSection: 'In-App Notifications',
+      inAppSection: 'IN-APP NOTIFICATIONS',
       likes: 'Likes',
       comments: 'Comments',
       mentions: 'Mentions',
       followers: 'New Followers',
       followingPosts: 'Posts from Following',
+      newMessages: 'New Messages',
+      levelUp: 'Level Up',
+      affiliateCommission: 'Affiliate Commission',
       pushSection: 'Push Notifications',
       pushEnabled: 'Enable Push Notifications',
       off: 'Off',
@@ -1176,6 +1189,8 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       daily: 'Daily',
       weekly: 'Weekly',
       settingsSaved: 'Settings saved',
+      disableAll: 'Disable All Notifications',
+      saveChanges: 'Save Changes',
     },
     messenger: {
       title: 'Messages',
