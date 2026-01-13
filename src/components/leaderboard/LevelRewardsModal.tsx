@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,8 @@ import { getLevelName, getPointsForLevel, getLevelColor, getLevelBgColor, LevelC
 import { useLanguage } from '@/i18n/LanguageContext';
 
 interface LevelReward {
-  id: string;
   level: number;
   rewardType: 'course_unlock' | 'chat_access' | 'badge' | 'custom';
-  rewardValue: string | null;
   description: string | null;
 }
 
@@ -25,6 +23,7 @@ interface LevelRewardsModalProps {
   currentLevel: number;
   levelConfig?: LevelConfig | null;
   rewards?: LevelReward[];
+  scrollToLevel?: number;
 }
 
 export function LevelRewardsModal({
@@ -33,9 +32,11 @@ export function LevelRewardsModal({
   currentLevel,
   levelConfig,
   rewards = [],
+  scrollToLevel,
 }: LevelRewardsModalProps) {
   const { formatNumber } = useLanguage();
   const config = levelConfig || DEFAULT_LEVEL_CONFIG;
+  const levelRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Group rewards by level
   const rewardsByLevel = rewards.reduce((acc, reward) => {
@@ -45,6 +46,18 @@ export function LevelRewardsModal({
     acc[reward.level].push(reward);
     return acc;
   }, {} as Record<number, LevelReward[]>);
+
+  // Auto-scroll to selected level when modal opens
+  useEffect(() => {
+    if (open && scrollToLevel && levelRefs.current[scrollToLevel]) {
+      setTimeout(() => {
+        levelRefs.current[scrollToLevel]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 150);
+    }
+  }, [open, scrollToLevel]);
 
   const getRewardIcon = (type: string) => {
     switch (type) {
@@ -92,11 +105,13 @@ export function LevelRewardsModal({
               return (
                 <div
                   key={level}
+                  ref={(el) => (levelRefs.current[level] = el)}
                   className={`
                     rounded-xl border-2 p-4 transition-all
                     ${getLevelBgColor(level)}
                     ${isCurrent ? 'ring-2 ring-primary ring-offset-2' : ''}
                     ${!isUnlocked ? 'opacity-60' : ''}
+                    ${scrollToLevel === level ? 'animate-pulse' : ''}
                   `}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -144,9 +159,9 @@ export function LevelRewardsModal({
                         Phần thưởng
                       </p>
                       <div className="space-y-2">
-                        {levelRewards.map((reward) => (
+                        {levelRewards.map((reward, idx) => (
                           <div
-                            key={reward.id}
+                            key={idx}
                             className={`
                               flex items-center gap-3 p-2 rounded-lg
                               ${isUnlocked 
