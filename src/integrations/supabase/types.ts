@@ -549,6 +549,51 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_at: string | null
+          event_type: string | null
+          id: string
+          location: string | null
+          meeting_url: string | null
+          start_at: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_at?: string | null
+          event_type?: string | null
+          id?: string
+          location?: string | null
+          meeting_url?: string | null
+          start_at: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_at?: string | null
+          event_type?: string | null
+          id?: string
+          location?: string | null
+          meeting_url?: string | null
+          start_at?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       membership_answers: {
         Row: {
           answer_text: string

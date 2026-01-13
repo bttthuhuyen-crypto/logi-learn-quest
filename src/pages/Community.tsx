@@ -7,10 +7,7 @@ import { SortDropdown } from '@/components/community/SortDropdown';
 import { PinnedPosts } from '@/components/community/PinnedPosts';
 import { PostsList } from '@/components/community/PostsList';
 import { PostEditor } from '@/components/community/PostEditor';
-import { UpcomingEvents } from '@/components/community/sidebar/UpcomingEvents';
-import { LeaderboardWidget } from '@/components/community/sidebar/LeaderboardWidget';
-import { NewMembersWidget } from '@/components/community/sidebar/NewMembersWidget';
-import { CommunityStats } from '@/components/community/sidebar/CommunityStats';
+import { SidebarWidgets } from '@/components/community/sidebar/SidebarWidgets';
 import { useUserPostLikes, SortOption } from '@/hooks/usePosts';
 import { usePinnedPosts } from '@/hooks/usePosts';
 import { useCategories } from '@/hooks/useCategories';
@@ -97,14 +94,7 @@ const Community = () => {
     console.log('Open post:', postId);
   };
 
-  const Sidebar = () => (
-    <div className="space-y-6">
-      <UpcomingEvents />
-      <LeaderboardWidget />
-      <NewMembersWidget />
-      <CommunityStats />
-    </div>
-  );
+  const Sidebar = () => <SidebarWidgets />;
 
   return (
     <MainLayout>
