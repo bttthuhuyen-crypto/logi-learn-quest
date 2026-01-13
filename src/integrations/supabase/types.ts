@@ -98,6 +98,78 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_dm_settings: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean | null
+          message_template: string | null
+          sender_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          message_template?: string | null
+          sender_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          message_template?: string | null
+          sender_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      chat_settings: {
+        Row: {
+          created_at: string
+          id: string
+          unlock_chat_enabled: boolean | null
+          unlock_chat_level: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          unlock_chat_enabled?: boolean | null
+          unlock_chat_level?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          unlock_chat_enabled?: boolean | null
+          unlock_chat_level?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_settings: {
         Row: {
           created_at: string
@@ -119,6 +191,65 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: Json
+        }
+        Relationships: []
+      }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          is_muted: boolean | null
+          joined_at: string
+          last_read_at: string | null
+          left_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          is_muted?: boolean | null
+          joined_at?: string
+          last_read_at?: string | null
+          left_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          is_muted?: boolean | null
+          joined_at?: string
+          last_read_at?: string | null
+          left_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          type?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -401,33 +532,178 @@ export type Database = {
         }
         Relationships: []
       }
+      message_reads: {
+        Row: {
+          id: string
+          message_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          attachment_name: string | null
+          attachment_size: number | null
+          attachment_url: string | null
+          content: string | null
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_auto_dm: boolean | null
+          message_type: Database["public"]["Enums"]["message_type"] | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_url?: string | null
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_auto_dm?: boolean | null
+          message_type?: Database["public"]["Enums"]["message_type"] | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_url?: string | null
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_auto_dm?: boolean | null
+          message_type?: Database["public"]["Enums"]["message_type"] | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_settings: {
+        Row: {
+          created_at: string
+          email_admin_announcements: boolean | null
+          email_digest: string | null
+          email_event_reminders: boolean | null
+          email_notifications: string | null
+          id: string
+          notify_comments: boolean | null
+          notify_followers: boolean | null
+          notify_following_posts: boolean | null
+          notify_likes: boolean | null
+          notify_mentions: boolean | null
+          push_enabled: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_admin_announcements?: boolean | null
+          email_digest?: string | null
+          email_event_reminders?: boolean | null
+          email_notifications?: string | null
+          id?: string
+          notify_comments?: boolean | null
+          notify_followers?: boolean | null
+          notify_following_posts?: boolean | null
+          notify_likes?: boolean | null
+          notify_mentions?: boolean | null
+          push_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_admin_announcements?: boolean | null
+          email_digest?: string | null
+          email_event_reminders?: boolean | null
+          email_notifications?: string | null
+          id?: string
+          notify_comments?: boolean | null
+          notify_followers?: boolean | null
+          notify_following_posts?: boolean | null
+          notify_likes?: boolean | null
+          notify_mentions?: boolean | null
+          push_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
+          actor_id: string | null
           created_at: string
           data: Json | null
           id: string
           is_read: boolean
           message: string
+          read_at: string | null
+          target_id: string | null
+          target_type: string | null
           title: string
           type: string
           user_id: string
         }
         Insert: {
+          actor_id?: string | null
           created_at?: string
           data?: Json | null
           id?: string
           is_read?: boolean
           message: string
+          read_at?: string | null
+          target_id?: string | null
+          target_type?: string | null
           title: string
           type: string
           user_id: string
         }
         Update: {
+          actor_id?: string | null
           created_at?: string
           data?: Json | null
           id?: string
           is_read?: boolean
           message?: string
+          read_at?: string | null
+          target_id?: string | null
+          target_type?: string | null
           title?: string
           type?: string
           user_id?: string
@@ -603,6 +879,66 @@ export type Database = {
           },
         ]
       }
+      user_presence: {
+        Row: {
+          last_seen_at: string | null
+          show_online_status: boolean | null
+          status: Database["public"]["Enums"]["presence_status"] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_seen_at?: string | null
+          show_online_status?: boolean | null
+          status?: Database["public"]["Enums"]["presence_status"] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_seen_at?: string | null
+          show_online_status?: boolean | null
+          status?: Database["public"]["Enums"]["presence_status"] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_reports: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_id: string
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["report_status"] | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_id: string
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reported_id?: string
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -637,14 +973,28 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_blocked: {
+        Args: { blocked_user_id: string; blocker_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "moderator" | "paid_member" | "free_member"
       lesson_access_level: "public" | "member" | "level"
       membership_status: "pending" | "approved" | "declined"
+      message_type: "text" | "image" | "file"
       payout_status: "pending" | "processing" | "completed" | "rejected"
+      presence_status: "online" | "away" | "offline"
       question_type: "text" | "multiple_choice" | "email"
       referral_status: "pending" | "confirmed" | "paid" | "reversed"
+      report_reason:
+        | "spam"
+        | "harassment"
+        | "inappropriate"
+        | "scam"
+        | "impersonation"
+        | "other"
+      report_status: "pending" | "reviewed" | "resolved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -775,9 +1125,20 @@ export const Constants = {
       app_role: ["owner", "admin", "moderator", "paid_member", "free_member"],
       lesson_access_level: ["public", "member", "level"],
       membership_status: ["pending", "approved", "declined"],
+      message_type: ["text", "image", "file"],
       payout_status: ["pending", "processing", "completed", "rejected"],
+      presence_status: ["online", "away", "offline"],
       question_type: ["text", "multiple_choice", "email"],
       referral_status: ["pending", "confirmed", "paid", "reversed"],
+      report_reason: [
+        "spam",
+        "harassment",
+        "inappropriate",
+        "scam",
+        "impersonation",
+        "other",
+      ],
+      report_status: ["pending", "reviewed", "resolved"],
     },
   },
 } as const
