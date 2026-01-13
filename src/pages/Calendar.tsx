@@ -18,7 +18,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { EventCard } from '@/components/calendar/EventCard';
-import { CalendarGrid } from '@/components/calendar/CalendarGrid';
+import { CalendarMonthView } from '@/components/calendar/CalendarMonthView';
 import { EventEditorModal } from '@/components/calendar/EventEditorModal';
 import { DeleteEventDialog } from '@/components/calendar/DeleteEventDialog';
 import { useLiveEvents, useUpcomingEvents, usePastEvents, Event } from '@/hooks/useEvents';
@@ -259,7 +259,7 @@ const Calendar: React.FC = () => {
         ) : (
           /* Calendar View */
           <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
-            <CalendarGrid 
+            <CalendarMonthView 
               onSelectDate={handleDateSelect}
               selectedDate={selectedDate}
             />
