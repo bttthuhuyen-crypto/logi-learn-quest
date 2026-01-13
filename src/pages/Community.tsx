@@ -5,7 +5,7 @@ import { CategoryChips } from '@/components/community/CategoryChips';
 import { SortDropdown } from '@/components/community/SortDropdown';
 import { PinnedPosts } from '@/components/community/PinnedPosts';
 import { PostsList } from '@/components/community/PostsList';
-import { CreatePostModal } from '@/components/community/CreatePostModal';
+import { PostEditor } from '@/components/community/PostEditor';
 import { UpcomingEvents } from '@/components/community/sidebar/UpcomingEvents';
 import { LeaderboardWidget } from '@/components/community/sidebar/LeaderboardWidget';
 import { NewMembersWidget } from '@/components/community/sidebar/NewMembersWidget';
@@ -117,8 +117,8 @@ const Community = () => {
         </Sheet>
       </div>
 
-      {/* Create Post Modal */}
-      <CreatePostModal
+      {/* Post Editor Modal */}
+      <PostEditor
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         defaultType={createModalType}
