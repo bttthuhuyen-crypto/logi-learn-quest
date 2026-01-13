@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ReferralTracker } from "@/components/affiliate/ReferralTracker";
@@ -12,6 +13,7 @@ import Admin from "./pages/Admin";
 import Classroom from "./pages/Classroom";
 import CourseEditor from "./pages/CourseEditor";
 import Community from "./pages/Community";
+import PostDetail from "./pages/PostDetail";
 import Calendar from "./pages/Calendar";
 import Members from "./pages/Members";
 import Leaderboard from "./pages/Leaderboard";
@@ -37,54 +39,57 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <ReferralTracker />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/classroom" element={<Classroom />} />
-              <Route path="/classroom/edit/:id" element={<CourseEditor />} />
-              <Route path="/classroom/:id" element={<CourseEditor />} />
-              <Route path="/community" element={<Community />} />
-              <Route path="/calendar" element={<Calendar />} />
-              <Route path="/members" element={<Members />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/messages" element={<Messenger />} />
-              <Route path="/messages/:conversationId" element={<Messenger />} />
-              {/* Settings Routes */}
-              <Route path="/settings" element={<Settings />}>
-                <Route index element={<Navigate to="/settings/profile" replace />} />
-                <Route path="profile" element={<SettingsProfile />} />
-                <Route path="notifications" element={<SettingsNotifications />} />
-                <Route path="payment" element={<SettingsPayment />} />
-                <Route path="orders" element={<SettingsOrders />} />
-                <Route path="affiliate" element={<SettingsAffiliate />} />
-                <Route path="security" element={<SettingsSecurity />} />
-                <Route path="admin/general" element={<AdminGeneralSettings />} />
-                <Route path="admin/categories" element={<AdminCategories />} />
-                <Route path="admin/plugins" element={<AdminPlugins />} />
-                <Route path="admin/commission" element={<AdminCommission />} />
-                <Route path="admin/payments" element={<AdminPayments />} />
-                <Route path="admin/analytics" element={<AdminAnalytics />} />
-              </Route>
-              {/* Legacy redirects */}
-              <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
-              <Route path="/affiliate" element={<Navigate to="/settings/affiliate" replace />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <HelmetProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <ReferralTracker />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/classroom" element={<Classroom />} />
+                <Route path="/classroom/edit/:id" element={<CourseEditor />} />
+                <Route path="/classroom/:id" element={<CourseEditor />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/community/post/:postId" element={<PostDetail />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/members" element={<Members />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/messages" element={<Messenger />} />
+                <Route path="/messages/:conversationId" element={<Messenger />} />
+                {/* Settings Routes */}
+                <Route path="/settings" element={<Settings />}>
+                  <Route index element={<Navigate to="/settings/profile" replace />} />
+                  <Route path="profile" element={<SettingsProfile />} />
+                  <Route path="notifications" element={<SettingsNotifications />} />
+                  <Route path="payment" element={<SettingsPayment />} />
+                  <Route path="orders" element={<SettingsOrders />} />
+                  <Route path="affiliate" element={<SettingsAffiliate />} />
+                  <Route path="security" element={<SettingsSecurity />} />
+                  <Route path="admin/general" element={<AdminGeneralSettings />} />
+                  <Route path="admin/categories" element={<AdminCategories />} />
+                  <Route path="admin/plugins" element={<AdminPlugins />} />
+                  <Route path="admin/commission" element={<AdminCommission />} />
+                  <Route path="admin/payments" element={<AdminPayments />} />
+                  <Route path="admin/analytics" element={<AdminAnalytics />} />
+                </Route>
+                {/* Legacy redirects */}
+                <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
+                <Route path="/affiliate" element={<Navigate to="/settings/affiliate" replace />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </HelmetProvider>
   </QueryClientProvider>
 );
 

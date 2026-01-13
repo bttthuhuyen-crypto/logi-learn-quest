@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PostComposer } from '@/components/community/PostComposer';
 import { CategoryChips } from '@/components/community/CategoryChips';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 
 const Community = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const categorySlug = searchParams.get('category');
   
@@ -90,8 +91,7 @@ const Community = () => {
   };
 
   const handleOpenPost = (postId: string) => {
-    // TODO: Navigate to post detail or open modal
-    console.log('Open post:', postId);
+    navigate(`/community/post/${postId}`);
   };
 
   const Sidebar = () => <SidebarWidgets />;
