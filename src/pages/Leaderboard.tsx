@@ -1,33 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { Trophy, Medal, Award, TrendingUp } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trophy } from 'lucide-react';
+import { MyProgressCard } from '@/components/leaderboard/MyProgressCard';
+import { LevelRewardsPreview } from '@/components/leaderboard/LevelRewardsPreview';
+import { LeaderboardList } from '@/components/leaderboard/LeaderboardList';
+import { LevelRewardsModal } from '@/components/leaderboard/LevelRewardsModal';
+import { useMyProgress } from '@/hooks/useMyProgress';
+import { useLevelConfig } from '@/hooks/useLevelConfig';
 
 const Leaderboard = () => {
-  const { t, formatNumber } = useLanguage();
+  const { t } = useLanguage();
+  const [showRewardsModal, setShowRewardsModal] = useState(false);
 
-  const leaders = [
-    { name: 'Nguyễn Văn A', points: 2500, level: 7 },
-    { name: 'Trần Thị B', points: 1800, level: 6 },
-    { name: 'Lê Văn C', points: 1200, level: 5 },
-    { name: 'Phạm Thị D', points: 850, level: 4 },
-    { name: 'Hoàng Văn E', points: 600, level: 4 },
-  ];
+  // TODO: Get actual community ID from context when multi-community is implemented
+  const communityId = undefined;
 
-  const getMedalIcon = (rank: number) => {
-    switch (rank) {
-      case 1: return <Trophy className="h-6 w-6 text-yellow-500" />;
-      case 2: return <Medal className="h-6 w-6 text-gray-400" />;
-      case 3: return <Award className="h-6 w-6 text-amber-600" />;
-      default: return <span className="w-6 h-6 flex items-center justify-center text-sm font-medium">{rank}</span>;
-    }
-  };
+  const { data: levelConfigData, isLoading: isConfigLoading } = useLevelConfig(communityId);
+  const { data: myProgress, isLoading: isProgressLoading } = useMyProgress(
+    communityId,
+    levelConfigData?.config
+  );
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Page Header */}
         <div className="flex items-center gap-3 mb-8">
           <Trophy className="h-8 w-8 text-primary" />
           <div>
@@ -36,55 +34,41 @@ const Leaderboard = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="week">
-          <TabsList className="mb-6">
-            <TabsTrigger value="week">{t.leaderboard.last7Days}</TabsTrigger>
-            <TabsTrigger value="month">{t.leaderboard.last30Days}</TabsTrigger>
-            <TabsTrigger value="all">{t.leaderboard.allTime}</TabsTrigger>
-          </TabsList>
+        {/* Responsive Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Progress & Rewards */}
+          <div className="lg:col-span-1 space-y-6">
+            <MyProgressCard
+              progress={myProgress}
+              isLoading={isProgressLoading}
+            />
+            <LevelRewardsPreview
+              currentLevel={myProgress?.level || 1}
+              levelConfig={levelConfigData?.config}
+              rewards={levelConfigData?.rewards}
+              isLoading={isConfigLoading}
+              onViewDetails={() => setShowRewardsModal(true)}
+            />
+          </div>
 
-          <TabsContent value="week" className="space-y-3">
-            {leaders.map((leader, index) => (
-              <div 
-                key={index} 
-                className={`flex items-center gap-4 p-4 rounded-lg border ${
-                  index < 3 ? 'bg-primary/5 border-primary/20' : ''
-                }`}
-              >
-                <div className="w-8 flex justify-center">
-                  {getMedalIcon(index + 1)}
-                </div>
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback>{leader.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-medium">{leader.name}</p>
-                  <p className="text-sm text-muted-foreground">{t.common.level} {leader.level}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-primary">{formatNumber(leader.points)}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" />
-                    {t.common.points}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </TabsContent>
-
-          <TabsContent value="month">
-            <p className="text-center text-muted-foreground py-8">
-              {t.leaderboard.data30Days}
-            </p>
-          </TabsContent>
-
-          <TabsContent value="all">
-            <p className="text-center text-muted-foreground py-8">
-              {t.leaderboard.dataAllTime}
-            </p>
-          </TabsContent>
-        </Tabs>
+          {/* Right Column - Leaderboard */}
+          <div className="lg:col-span-2">
+            <LeaderboardList
+              communityId={communityId}
+              levelConfig={levelConfigData?.config}
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Rewards Modal */}
+      <LevelRewardsModal
+        open={showRewardsModal}
+        onOpenChange={setShowRewardsModal}
+        currentLevel={myProgress?.level || 1}
+        levelConfig={levelConfigData?.config}
+        rewards={levelConfigData?.rewards}
+      />
     </MainLayout>
   );
 };

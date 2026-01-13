@@ -329,6 +329,13 @@ interface LeaderboardTranslations {
   data7Days: string;
   data30Days: string;
   dataAllTime: string;
+  yourProgress: string;
+  pointsToNext: string;
+  levelRewards: string;
+  viewDetails: string;
+  searchPlaceholder: string;
+  loadMore: string;
+  noResults: string;
 }
 
 interface AboutTranslations {
@@ -932,6 +939,13 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       data7Days: 'Dữ liệu 7 ngày',
       data30Days: 'Dữ liệu 30 ngày',
       dataAllTime: 'Tổng điểm tất cả thời gian',
+      yourProgress: 'Tiến độ của bạn',
+      pointsToNext: 'Tiến độ lên level',
+      levelRewards: 'Phần thưởng theo cấp',
+      viewDetails: 'Xem chi tiết',
+      searchPlaceholder: 'Tìm kiếm thành viên...',
+      loadMore: 'Xem thêm',
+      noResults: 'Không tìm thấy thành viên nào',
     },
     about: {
       title: '10X Logistics',
@@ -1495,6 +1509,13 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       data7Days: '7 days data',
       data30Days: '30 days data',
       dataAllTime: 'All time points',
+      yourProgress: 'Your Progress',
+      pointsToNext: 'Progress to next level',
+      levelRewards: 'Level Rewards',
+      viewDetails: 'View Details',
+      searchPlaceholder: 'Search members...',
+      loadMore: 'Load More',
+      noResults: 'No members found',
     },
     about: {
       title: '10X Logistics',
