@@ -39,7 +39,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { PostRichTextEditor } from './PostRichTextEditor';
 import { VideoUrlModal } from './VideoUrlModal';
 import { GifPicker } from './GifPicker';
-import { PollBuilder, PollData } from './PollBuilder';
+import { PollBuilder, PollData, calculateEndsAt } from './PollBuilder';
 import { MediaPreviewGrid } from './MediaPreviewGrid';
 import { useMediaUpload, MediaItem } from '@/hooks/useMediaUpload';
 
@@ -75,7 +75,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [pollData, setPollData] = useState<PollData | null>(
     defaultType === 'poll' 
-      ? { question: '', options: ['', ''], isMultipleChoice: false, endsAt: null }
+      ? { question: '', options: ['', ''], isMultipleChoice: false, endsAt: null, duration: 'none' }
       : null
   );
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -181,7 +181,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     if (pollData) {
       setPollData(null);
     } else {
-      setPollData({ question: '', options: ['', ''], isMultipleChoice: false, endsAt: null });
+      setPollData({ question: '', options: ['', ''], isMultipleChoice: false, endsAt: null, duration: 'none' });
       // Clear media when adding poll
       setMediaItems([]);
     }
@@ -284,13 +284,16 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       if (pollData) {
         const validOptions = pollData.options.filter((opt) => opt.trim());
 
+        // Calculate endsAt from duration
+        const endsAt = calculateEndsAt(pollData.duration);
+        
         const { data: poll, error: pollError } = await supabase
           .from('polls')
           .insert({
             post_id: post.id,
             question: pollData.question.trim(),
             is_multiple_choice: pollData.isMultipleChoice,
-            ends_at: pollData.endsAt ? new Date(pollData.endsAt).toISOString() : null,
+            ends_at: endsAt,
           })
           .select()
           .single();
