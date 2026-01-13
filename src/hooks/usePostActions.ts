@@ -45,7 +45,12 @@ export const useUpdatePost = () => {
   return useMutation({
     mutationFn: async ({ postId, updates }: { 
       postId: string; 
-      updates: { title?: string; content?: string } 
+      updates: { 
+        title?: string; 
+        content?: string;
+        category_id?: string;
+        is_action_post?: boolean;
+      } 
     }) => {
       const { error } = await supabase
         .from('posts')
@@ -53,8 +58,10 @@ export const useUpdatePost = () => {
         .eq('id', postId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['post', variables.postId] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });
 };

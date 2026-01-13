@@ -53,6 +53,7 @@ interface PostCardProps {
   isFollowing?: boolean;
   onOpenPost?: (postId: string) => void;
   onCategoryClick?: (categoryId: string) => void;
+  onEditPost?: (post: Post) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({ 
@@ -61,6 +62,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   isFollowing = false,
   onOpenPost,
   onCategoryClick,
+  onEditPost,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -74,6 +76,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const pinPost = usePinPost();
 
   const isAuthor = user?.id === post.author_id;
+  const canEdit = isAuthor || isAdmin;
 
   const timeAgo = formatDistanceToNow(new Date(post.created_at), {
     addSuffix: true,
@@ -112,6 +115,10 @@ export const PostCard: React.FC<PostCardProps> = ({
     const url = `${window.location.origin}/community/post/${post.id}`;
     navigator.clipboard.writeText(url);
     toast.success('Đã sao chép liên kết');
+  };
+
+  const handleEdit = () => {
+    onEditPost?.(post);
   };
 
   const handleDelete = () => {
@@ -214,21 +221,24 @@ export const PostCard: React.FC<PostCardProps> = ({
                 Sao chép liên kết
               </DropdownMenuItem>
               
-              {isAuthor && (
+              {canEdit && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleEdit}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Chỉnh sửa
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="text-destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Xóa bài viết
-                  </DropdownMenuItem>
                 </>
+              )}
+
+              {(isAuthor || isAdmin) && (
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Xóa bài viết
+                </DropdownMenuItem>
               )}
 
               {isAdmin && (
@@ -238,15 +248,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                     <Pin className="h-4 w-4 mr-2" />
                     {post.is_pinned ? 'Bỏ ghim' : 'Ghim bài viết'}
                   </DropdownMenuItem>
-                  {!isAuthor && (
-                    <DropdownMenuItem 
-                      className="text-destructive"
-                      onClick={() => setShowDeleteDialog(true)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Xóa bài viết
-                    </DropdownMenuItem>
-                  )}
                 </>
               )}
 
