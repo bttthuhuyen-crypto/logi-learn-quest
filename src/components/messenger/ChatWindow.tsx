@@ -14,9 +14,11 @@ import {
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useMessages, Message } from '@/hooks/useMessages';
 import { MessageBubble } from './MessageBubble';
+import { ChatLockedOverlay } from './ChatLockedOverlay';
 import { ConversationWithDetails } from '@/hooks/useConversations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useChatUnlock } from '@/hooks/useChatUnlock';
 
 interface ChatWindowProps {
   conversation: ConversationWithDetails | null;
@@ -39,6 +41,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  const { canChat, requiredLevel, currentLevel } = useChatUnlock();
   const { messages, isLoading, sendMessage, markAsRead, deleteMessage } = useMessages(
     conversation?.id || null
   );
@@ -206,59 +209,67 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-2">
-          <input
-            type="file"
-            ref={imageInputRef}
-            className="hidden"
-            accept="image/*"
-            onChange={handleImageSelect}
-          />
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" disabled={isUploading}>
-                <Paperclip className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
-                <ImageIcon className="h-4 w-4 mr-2" />
-                {t.messenger?.attachImage || 'Đính kèm ảnh'}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                <Paperclip className="h-4 w-4 mr-2" />
-                {t.messenger?.attachFile || 'Đính kèm file'}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {canChat ? (
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={imageInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageSelect}
+            />
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" disabled={isUploading}>
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  {t.messenger?.attachImage || 'Đính kèm ảnh'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                  <Paperclip className="h-4 w-4 mr-2" />
+                  {t.messenger?.attachFile || 'Đính kèm file'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <Input
-            ref={inputRef}
-            placeholder={t.messenger?.typeMessage || 'Nhập tin nhắn...'}
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={sendMessage.isPending || isUploading}
-            className="flex-1"
-          />
-          
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={!messageText.trim() || sendMessage.isPending || isUploading}
-            size="icon"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+            <Input
+              ref={inputRef}
+              placeholder={t.messenger?.typeMessage || 'Nhập tin nhắn...'}
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={sendMessage.isPending || isUploading}
+              className="flex-1"
+            />
+            
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={!messageText.trim() || sendMessage.isPending || isUploading}
+              size="icon"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <ChatLockedOverlay 
+          requiredLevel={requiredLevel} 
+          currentLevel={currentLevel} 
+          variant="inline" 
+        />
+      )}
     </div>
   );
 };
