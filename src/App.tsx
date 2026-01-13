@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PresenceProvider } from "@/contexts/PresenceContext";
+import { LevelUpCelebrationProvider } from "@/contexts/LevelUpCelebrationContext";
 import { ReferralTracker } from "@/components/affiliate/ReferralTracker";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -47,11 +48,12 @@ const App = () => (
       <LanguageProvider>
         <AuthProvider>
           <PresenceProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <ReferralTracker />
+            <LevelUpCelebrationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <ReferralTracker />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
@@ -93,8 +95,9 @@ const App = () => (
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
+                </BrowserRouter>
+              </TooltipProvider>
+            </LevelUpCelebrationProvider>
           </PresenceProvider>
         </AuthProvider>
       </LanguageProvider>

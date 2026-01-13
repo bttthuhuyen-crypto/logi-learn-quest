@@ -157,6 +157,25 @@ export const useCreateNotification = () => {
     });
   };
 
+  const notifyLevelUp = async (
+    userId: string,
+    newLevel: number,
+    levelName: string,
+    rewardIds?: string[]
+  ) => {
+    return createNotification.mutateAsync({
+      user_id: userId,
+      type: 'level_up',
+      title: `🎉 Lên Level ${newLevel}!`,
+      message: `Chúc mừng! Bạn đã đạt Level ${newLevel} - "${levelName}"`,
+      data: {
+        level: newLevel,
+        level_name: levelName,
+        reward_ids: rewardIds || [],
+      } as unknown as Json,
+    });
+  };
+
   return {
     createNotification: createNotification.mutate,
     createNotificationAsync: createNotification.mutateAsync,
@@ -173,5 +192,6 @@ export const useCreateNotification = () => {
     notifyEventReminder24h,
     notifyEventReminder1h,
     notifyEventLive,
+    notifyLevelUp,
   };
 };
