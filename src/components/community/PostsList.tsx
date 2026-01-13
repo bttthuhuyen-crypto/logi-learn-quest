@@ -1,6 +1,6 @@
 import React from 'react';
 import { PostCard } from './PostCard';
-import { usePosts, useUserPostLikes, SortOption } from '@/hooks/usePosts';
+import { usePosts, useUserPostLikes, SortOption, Post } from '@/hooks/usePosts';
 import { useUserPostFollows } from '@/hooks/usePostFollows';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ interface PostsListProps {
   sort: SortOption;
   onOpenPost?: (postId: string) => void;
   onCategoryClick?: (categoryId: string) => void;
+  onEditPost?: (post: Post) => void;
 }
 
 const PostSkeleton = () => (
@@ -40,6 +41,7 @@ export const PostsList: React.FC<PostsListProps> = ({
   sort, 
   onOpenPost,
   onCategoryClick,
+  onEditPost,
 }) => {
   const { data: posts, isLoading, isError, refetch } = usePosts({
     categoryId,
@@ -100,6 +102,7 @@ export const PostsList: React.FC<PostsListProps> = ({
           isFollowing={followedPostIds.includes(post.id)}
           onOpenPost={onOpenPost}
           onCategoryClick={onCategoryClick}
+          onEditPost={onEditPost}
         />
       ))}
       

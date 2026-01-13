@@ -65,6 +65,7 @@ import { PostPollPreview } from '@/components/community/PostPollPreview';
 import { CommentsSection } from '@/components/community/CommentsSection';
 import { RelatedPostsWidget } from '@/components/community/RelatedPostsWidget';
 import { AuthorPostsWidget } from '@/components/community/AuthorPostsWidget';
+import { PostEditor, EditPostData } from '@/components/community/PostEditor';
 
 const PostDetail: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -73,6 +74,7 @@ const PostDetail: React.FC = () => {
   const { isAdmin } = useUserRole();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { data: post, isLoading, error } = usePost(postId);
   const { data: likedPostIds = [] } = useUserPostLikes(postId ? [postId] : []);
@@ -86,6 +88,7 @@ const PostDetail: React.FC = () => {
   const isLiked = postId ? likedPostIds.includes(postId) : false;
   const isFollowing = postId ? followedPostIds.includes(postId) : false;
   const isAuthor = user?.id === post?.author_id;
+  const canEdit = isAuthor || isAdmin;
 
   const timeAgo = post
     ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: vi })
@@ -126,6 +129,10 @@ const PostDetail: React.FC = () => {
     toast.success('Đã sao chép liên kết');
   };
 
+  const handleEdit = () => {
+    setIsEditModalOpen(true);
+  };
+
   const handleDelete = () => {
     if (!postId) return;
     deletePost.mutate(postId, {
@@ -155,6 +162,28 @@ const PostDetail: React.FC = () => {
     if (!text) return '';
     return text.length > length ? text.slice(0, length) + '...' : text;
   };
+
+  // Prepare edit data
+  const editPostData: EditPostData | null = post ? {
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    category_id: post.category?.id || '',
+    is_action_post: post.is_action_post,
+    content_type: post.content_type,
+    media: post.media?.map(m => ({
+      id: m.id,
+      media_type: m.media_type,
+      media_url: m.media_url,
+      thumbnail_url: m.thumbnail_url,
+    })) || [],
+    poll: post.poll ? {
+      id: post.poll.id,
+      question: post.poll.question,
+      is_multiple_choice: post.poll.is_multiple_choice,
+      ends_at: post.poll.ends_at,
+    } : null,
+  } : null;
 
   // Loading state
   if (isLoading) {
@@ -304,21 +333,24 @@ const PostDetail: React.FC = () => {
                       Sao chép liên kết
                     </DropdownMenuItem>
 
-                    {isAuthor && (
+                    {canEdit && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleEdit}>
                           <Pencil className="h-4 w-4 mr-2" />
                           Chỉnh sửa
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setShowDeleteDialog(true)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Xóa bài viết
-                        </DropdownMenuItem>
                       </>
+                    )}
+
+                    {(isAuthor || isAdmin) && (
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => setShowDeleteDialog(true)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Xóa bài viết
+                      </DropdownMenuItem>
                     )}
 
                     {isAdmin && (
@@ -328,15 +360,6 @@ const PostDetail: React.FC = () => {
                           <Pin className="h-4 w-4 mr-2" />
                           {post.is_pinned ? 'Bỏ ghim' : 'Ghim bài viết'}
                         </DropdownMenuItem>
-                        {!isAuthor && (
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setShowDeleteDialog(true)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Xóa bài viết
-                          </DropdownMenuItem>
-                        )}
                       </>
                     )}
 
@@ -491,6 +514,13 @@ const PostDetail: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Post Modal */}
+      <PostEditor
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        editPost={editPostData}
+      />
     </MainLayout>
   );
 };

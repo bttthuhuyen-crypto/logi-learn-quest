@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -53,23 +53,49 @@ const postEditorSchema = z.object({
 
 type PostEditorFormData = z.infer<typeof postEditorSchema>;
 
+// Interface for editing existing post
+export interface EditPostData {
+  id: string;
+  title: string;
+  content: string | null;
+  category_id: string;
+  is_action_post: boolean;
+  content_type: 'text' | 'poll';
+  media: Array<{
+    id: string;
+    media_type: 'image' | 'video' | 'gif' | 'link';
+    media_url: string;
+    thumbnail_url: string | null;
+  }>;
+  poll?: {
+    id: string;
+    question: string;
+    is_multiple_choice: boolean;
+    ends_at: string | null;
+  } | null;
+}
+
 interface PostEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultType?: 'text' | 'poll';
+  editPost?: EditPostData | null;
 }
 
 export const PostEditor: React.FC<PostEditorProps> = ({
   open,
   onOpenChange,
   defaultType = 'text',
+  editPost = null,
 }) => {
   const { user, profile } = useAuth();
   const { data: categories } = useCategories();
   const { isAdmin } = useUserRole();
-  const { uploadMediaFiles, isUploading } = useMediaUpload();
+  const { uploadMediaFiles, deleteMediaFile, isUploading } = useMediaUpload();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isEditMode = !!editPost;
 
   const [content, setContent] = useState('');
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
@@ -82,6 +108,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Track original media IDs for deletion
+  const [originalMediaIds, setOriginalMediaIds] = useState<string[]>([]);
+
   const form = useForm<PostEditorFormData>({
     resolver: zodResolver(postEditorSchema),
     defaultValues: {
@@ -92,6 +121,54 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   });
 
   const titleValue = form.watch('title');
+
+  // Reset form when opening/closing or switching between create/edit
+  useEffect(() => {
+    if (!open) return;
+
+    if (editPost) {
+      // Edit mode - pre-fill form
+      form.reset({
+        title: editPost.title,
+        categoryId: editPost.category_id,
+        isActionPost: editPost.is_action_post,
+      });
+      setContent(editPost.content || '');
+      
+      // Convert existing media to MediaItem format
+      const existingMedia: MediaItem[] = editPost.media.map(m => ({
+        id: m.id,
+        type: m.media_type,
+        url: m.media_url,
+        thumbnailUrl: m.thumbnail_url || undefined,
+        isExisting: true,
+      }));
+      setMediaItems(existingMedia);
+      setOriginalMediaIds(editPost.media.map(m => m.id));
+
+      // Don't allow editing poll (show as read-only indicator)
+      if (editPost.content_type === 'poll') {
+        setPollData(null); // Poll cannot be edited
+      } else {
+        setPollData(null);
+      }
+    } else {
+      // Create mode - reset form
+      form.reset({
+        title: '',
+        categoryId: '',
+        isActionPost: false,
+      });
+      setContent('');
+      setMediaItems([]);
+      setOriginalMediaIds([]);
+      setPollData(
+        defaultType === 'poll' 
+          ? { question: '', options: ['', ''], isMultipleChoice: false, endsAt: null, duration: 'none' }
+          : null
+      );
+    }
+  }, [open, editPost, defaultType, form]);
 
   // Filter categories based on user permission
   const availableCategories = categories?.filter((cat) => {
@@ -188,8 +265,16 @@ export const PostEditor: React.FC<PostEditorProps> = ({
   };
 
   const handleClose = () => {
-    if (titleValue || content || mediaItems.length > 0 || pollData?.question) {
-      if (confirm('Bạn có chắc muốn hủy bài viết này?')) {
+    const hasChanges = isEditMode 
+      ? (
+        form.getValues('title') !== editPost?.title ||
+        content !== (editPost?.content || '') ||
+        form.getValues('categoryId') !== editPost?.category_id
+      )
+      : (titleValue || content || mediaItems.length > 0 || pollData?.question);
+
+    if (hasChanges) {
+      if (confirm(isEditMode ? 'Bạn có chắc muốn hủy chỉnh sửa?' : 'Bạn có chắc muốn hủy bài viết này?')) {
         resetForm();
         onOpenChange(false);
       }
@@ -204,6 +289,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     setContent('');
     setMediaItems([]);
     setPollData(null);
+    setOriginalMediaIds([]);
   };
 
   const onSubmit = async (data: PostEditorFormData) => {
@@ -212,8 +298,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       return;
     }
 
-    // Validate poll if present
-    if (pollData) {
+    // Validate poll if present (only for create mode)
+    if (pollData && !isEditMode) {
       if (!pollData.question.trim()) {
         toast.error('Vui lòng nhập câu hỏi thăm dò');
         return;
@@ -228,99 +314,188 @@ export const PostEditor: React.FC<PostEditorProps> = ({
     setIsSubmitting(true);
 
     try {
-      // 1. Create post
-      const { data: post, error: postError } = await supabase
-        .from('posts')
-        .insert({
-          title: data.title.trim(),
-          content: content.trim() || null,
-          category_id: data.categoryId,
-          content_type: pollData ? 'poll' : 'text',
-          is_action_post: data.isActionPost,
-          author_id: user.id,
-        })
-        .select()
-        .single();
+      if (isEditMode && editPost) {
+        // ===== UPDATE MODE =====
+        
+        // 1. Update post
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update({
+            title: data.title.trim(),
+            content: content.trim() || null,
+            category_id: data.categoryId,
+            is_action_post: data.isActionPost,
+          })
+          .eq('id', editPost.id);
 
-      if (postError) throw postError;
+        if (updateError) throw updateError;
 
-      // 2. Upload and save media
-      if (mediaItems.length > 0) {
-        // Upload files to storage
-        const filesToUpload = mediaItems.filter((item) => item.file);
-        const uploadedUrls: { url: string; type: 'image' | 'video' | 'gif' }[] = [];
-
-        if (filesToUpload.length > 0) {
-          const uploaded = await uploadMediaFiles(
-            filesToUpload.map((item) => item.file!),
-            user.id
-          );
-          uploadedUrls.push(...uploaded);
+        // 2. Handle media changes
+        const currentExistingMediaIds = mediaItems
+          .filter(m => m.isExisting)
+          .map(m => m.id);
+        
+        // Delete removed media from database
+        const removedMediaIds = originalMediaIds.filter(id => !currentExistingMediaIds.includes(id));
+        if (removedMediaIds.length > 0) {
+          // Delete from post_media table
+          const { error: deleteError } = await supabase
+            .from('post_media')
+            .delete()
+            .in('id', removedMediaIds);
+          
+          if (deleteError) console.error('Error deleting media records:', deleteError);
+          
+          // Also delete from storage
+          for (const mediaId of removedMediaIds) {
+            const media = editPost.media.find(m => m.id === mediaId);
+            if (media?.media_url) {
+              await deleteMediaFile(media.media_url);
+            }
+          }
         }
 
-        // Prepare media records
-        const mediaRecords = mediaItems.map((item, index) => {
-          const uploadedItem = item.file
-            ? uploadedUrls.shift()
-            : { url: item.url, type: item.type };
+        // 3. Upload new media
+        const newMedia = mediaItems.filter(m => !m.isExisting);
+        if (newMedia.length > 0) {
+          const filesToUpload = newMedia.filter(item => item.file);
+          const uploadedUrls: { url: string; type: 'image' | 'video' | 'gif' }[] = [];
 
-          return {
-            post_id: post.id,
-            media_type: uploadedItem?.type || item.type,
-            media_url: uploadedItem?.url || item.url,
-            thumbnail_url: item.thumbnailUrl || null,
-            order_index: index,
-          };
-        });
+          if (filesToUpload.length > 0) {
+            const uploaded = await uploadMediaFiles(
+              filesToUpload.map(item => item.file!),
+              user.id
+            );
+            uploadedUrls.push(...uploaded);
+          }
 
-        const { error: mediaError } = await supabase
-          .from('post_media')
-          .insert(mediaRecords);
+          // Get current max order_index
+          const currentMaxIndex = currentExistingMediaIds.length;
 
-        if (mediaError) throw mediaError;
-      }
+          const mediaRecords = newMedia.map((item, index) => {
+            const uploadedItem = item.file
+              ? uploadedUrls.shift()
+              : { url: item.url, type: item.type };
 
-      // 3. Create poll if present
-      if (pollData) {
-        const validOptions = pollData.options.filter((opt) => opt.trim());
+            return {
+              post_id: editPost.id,
+              media_type: uploadedItem?.type || item.type,
+              media_url: uploadedItem?.url || item.url,
+              thumbnail_url: item.thumbnailUrl || null,
+              order_index: currentMaxIndex + index,
+            };
+          });
 
-        // Calculate endsAt from duration
-        const endsAt = calculateEndsAt(pollData.duration);
+          const { error: mediaError } = await supabase
+            .from('post_media')
+            .insert(mediaRecords);
+
+          if (mediaError) throw mediaError;
+        }
+
+        toast.success('Đã cập nhật bài viết');
+        queryClient.invalidateQueries({ queryKey: ['posts'] });
+        queryClient.invalidateQueries({ queryKey: ['post', editPost.id] });
+        queryClient.invalidateQueries({ queryKey: ['categories'] });
+        resetForm();
+        onOpenChange(false);
+      } else {
+        // ===== CREATE MODE =====
         
-        const { data: poll, error: pollError } = await supabase
-          .from('polls')
+        // 1. Create post
+        const { data: post, error: postError } = await supabase
+          .from('posts')
           .insert({
-            post_id: post.id,
-            question: pollData.question.trim(),
-            is_multiple_choice: pollData.isMultipleChoice,
-            ends_at: endsAt,
+            title: data.title.trim(),
+            content: content.trim() || null,
+            category_id: data.categoryId,
+            content_type: pollData ? 'poll' : 'text',
+            is_action_post: data.isActionPost,
+            author_id: user.id,
           })
           .select()
           .single();
 
-        if (pollError) throw pollError;
+        if (postError) throw postError;
 
-        const optionRecords = validOptions.map((opt, index) => ({
-          poll_id: poll.id,
-          option_text: opt.trim(),
-          order_index: index,
-        }));
+        // 2. Upload and save media
+        if (mediaItems.length > 0) {
+          // Upload files to storage
+          const filesToUpload = mediaItems.filter((item) => item.file);
+          const uploadedUrls: { url: string; type: 'image' | 'video' | 'gif' }[] = [];
 
-        const { error: optionsError } = await supabase
-          .from('poll_options')
-          .insert(optionRecords);
+          if (filesToUpload.length > 0) {
+            const uploaded = await uploadMediaFiles(
+              filesToUpload.map((item) => item.file!),
+              user.id
+            );
+            uploadedUrls.push(...uploaded);
+          }
 
-        if (optionsError) throw optionsError;
+          // Prepare media records
+          const mediaRecords = mediaItems.map((item, index) => {
+            const uploadedItem = item.file
+              ? uploadedUrls.shift()
+              : { url: item.url, type: item.type };
+
+            return {
+              post_id: post.id,
+              media_type: uploadedItem?.type || item.type,
+              media_url: uploadedItem?.url || item.url,
+              thumbnail_url: item.thumbnailUrl || null,
+              order_index: index,
+            };
+          });
+
+          const { error: mediaError } = await supabase
+            .from('post_media')
+            .insert(mediaRecords);
+
+          if (mediaError) throw mediaError;
+        }
+
+        // 3. Create poll if present
+        if (pollData) {
+          const validOptions = pollData.options.filter((opt) => opt.trim());
+
+          // Calculate endsAt from duration
+          const endsAt = calculateEndsAt(pollData.duration);
+          
+          const { data: poll, error: pollError } = await supabase
+            .from('polls')
+            .insert({
+              post_id: post.id,
+              question: pollData.question.trim(),
+              is_multiple_choice: pollData.isMultipleChoice,
+              ends_at: endsAt,
+            })
+            .select()
+            .single();
+
+          if (pollError) throw pollError;
+
+          const optionRecords = validOptions.map((opt, index) => ({
+            poll_id: poll.id,
+            option_text: opt.trim(),
+            order_index: index,
+          }));
+
+          const { error: optionsError } = await supabase
+            .from('poll_options')
+            .insert(optionRecords);
+
+          if (optionsError) throw optionsError;
+        }
+
+        toast.success('Đã đăng bài viết');
+        queryClient.invalidateQueries({ queryKey: ['posts'] });
+        queryClient.invalidateQueries({ queryKey: ['categories'] });
+        resetForm();
+        onOpenChange(false);
       }
-
-      toast.success('Đã đăng bài viết');
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      resetForm();
-      onOpenChange(false);
     } catch (error: any) {
-      console.error('Error creating post:', error);
-      toast.error(error.message || 'Không thể đăng bài viết');
+      console.error('Error saving post:', error);
+      toast.error(error.message || (isEditMode ? 'Không thể cập nhật bài viết' : 'Không thể đăng bài viết'));
     } finally {
       setIsSubmitting(false);
     }
@@ -331,7 +506,9 @@ export const PostEditor: React.FC<PostEditorProps> = ({
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Tạo bài viết mới</DialogTitle>
+            <DialogTitle>
+              {isEditMode ? 'Chỉnh sửa bài viết' : 'Tạo bài viết mới'}
+            </DialogTitle>
           </DialogHeader>
 
           <Form {...form}>
@@ -397,8 +574,16 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 )}
               />
 
-              {/* Rich Text Editor */}
-              {!pollData && (
+              {/* Poll indicator for edit mode */}
+              {isEditMode && editPost?.content_type === 'poll' && (
+                <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                  <BarChart3 className="h-4 w-4 inline mr-2" />
+                  Bài viết này có khảo sát - Không thể chỉnh sửa nội dung khảo sát
+                </div>
+              )}
+
+              {/* Rich Text Editor - Hide for poll posts in edit mode */}
+              {(!pollData && !(isEditMode && editPost?.content_type === 'poll')) && (
                 <div className="space-y-2">
                   <Label>Nội dung</Label>
                   <PostRichTextEditor
@@ -414,8 +599,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 <MediaPreviewGrid items={mediaItems} onRemove={handleRemoveMedia} />
               )}
 
-              {/* Poll Builder */}
-              {pollData && (
+              {/* Poll Builder - Only for create mode */}
+              {pollData && !isEditMode && (
                 <PollBuilder
                   value={pollData}
                   onChange={setPollData}
@@ -423,8 +608,8 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 />
               )}
 
-              {/* Media buttons */}
-              {!pollData && (
+              {/* Media buttons - Hide for poll posts */}
+              {!pollData && !(isEditMode && editPost?.content_type === 'poll') && (
                 <div className="flex items-center gap-2 pt-2 border-t border-border">
                   <span className="text-sm text-muted-foreground">Thêm:</span>
                   <input
@@ -466,16 +651,19 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                     <Sparkles className="h-4 w-4" />
                     GIF
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2"
-                    onClick={handleTogglePoll}
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Poll
-                  </Button>
+                  {/* Only show poll toggle in create mode */}
+                  {!isEditMode && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2"
+                      onClick={handleTogglePoll}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      Poll
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -502,13 +690,13 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                 />
               </div>
 
-              {/* Footer */}
-              <DialogFooter className="pt-4">
+              {/* Submit */}
+              <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleClose}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isUploading}
                 >
                   Hủy
                 </Button>
@@ -516,7 +704,7 @@ export const PostEditor: React.FC<PostEditorProps> = ({
                   {(isSubmitting || isUploading) && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
-                  Đăng bài
+                  {isEditMode ? 'Cập nhật' : 'Đăng bài'}
                 </Button>
               </DialogFooter>
             </form>
@@ -524,12 +712,14 @@ export const PostEditor: React.FC<PostEditorProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Sub-modals */}
+      {/* Video URL Modal */}
       <VideoUrlModal
         open={showVideoModal}
         onOpenChange={setShowVideoModal}
         onAddVideo={handleAddVideo}
       />
+
+      {/* GIF Picker */}
       <GifPicker
         open={showGifPicker}
         onOpenChange={setShowGifPicker}

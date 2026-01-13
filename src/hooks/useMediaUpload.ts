@@ -9,6 +9,7 @@ export interface MediaItem {
   file?: File;
   thumbnailUrl?: string;
   isUploading?: boolean;
+  isExisting?: boolean;
 }
 
 export const useMediaUpload = () => {

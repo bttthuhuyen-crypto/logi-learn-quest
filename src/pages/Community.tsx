@@ -6,9 +6,9 @@ import { CategoryChips } from '@/components/community/CategoryChips';
 import { SortDropdown } from '@/components/community/SortDropdown';
 import { PinnedPosts } from '@/components/community/PinnedPosts';
 import { PostsList } from '@/components/community/PostsList';
-import { PostEditor } from '@/components/community/PostEditor';
+import { PostEditor, EditPostData } from '@/components/community/PostEditor';
 import { SidebarWidgets } from '@/components/community/sidebar/SidebarWidgets';
-import { useUserPostLikes, SortOption } from '@/hooks/usePosts';
+import { useUserPostLikes, SortOption, Post } from '@/hooks/usePosts';
 import { usePinnedPosts } from '@/hooks/usePosts';
 import { useCategories } from '@/hooks/useCategories';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -40,6 +40,7 @@ const Community = () => {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createModalType, setCreateModalType] = useState<'text' | 'poll'>('text');
+  const [editingPost, setEditingPost] = useState<EditPostData | null>(null);
 
   // Get pinned posts for like status
   const { data: pinnedPosts } = usePinnedPosts(selectedCategoryId);
@@ -86,12 +87,46 @@ const Community = () => {
   };
 
   const handleOpenCreateModal = (type: 'text' | 'poll' = 'text') => {
+    setEditingPost(null); // Clear any editing state
     setCreateModalType(type);
     setIsCreateModalOpen(true);
   };
 
   const handleOpenPost = (postId: string) => {
     navigate(`/community/post/${postId}`);
+  };
+
+  const handleEditPost = (post: Post) => {
+    // Convert Post to EditPostData format
+    const editData: EditPostData = {
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      category_id: post.category_id,
+      is_action_post: post.is_action_post,
+      content_type: post.content_type,
+      media: post.media?.map(m => ({
+        id: m.id,
+        media_type: m.media_type,
+        media_url: m.media_url,
+        thumbnail_url: m.thumbnail_url,
+      })) || [],
+      poll: post.poll ? {
+        id: post.poll.id,
+        question: post.poll.question,
+        is_multiple_choice: post.poll.is_multiple_choice,
+        ends_at: post.poll.ends_at,
+      } : null,
+    };
+    setEditingPost(editData);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setIsCreateModalOpen(open);
+    if (!open) {
+      setEditingPost(null);
+    }
   };
 
   const Sidebar = () => <SidebarWidgets />;
@@ -128,6 +163,7 @@ const Community = () => {
               categoryId={selectedCategoryId}
               sort={sortOption}
               onOpenPost={handleOpenPost}
+              onEditPost={handleEditPost}
             />
           </div>
 
@@ -161,8 +197,9 @@ const Community = () => {
       {/* Post Editor Modal */}
       <PostEditor
         open={isCreateModalOpen}
-        onOpenChange={setIsCreateModalOpen}
+        onOpenChange={handleModalClose}
         defaultType={createModalType}
+        editPost={editingPost}
       />
     </MainLayout>
   );
