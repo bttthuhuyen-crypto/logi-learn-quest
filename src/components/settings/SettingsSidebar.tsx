@@ -16,6 +16,7 @@ import {
   Percent,
   Banknote,
   BarChart3,
+  Trophy,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -43,6 +44,7 @@ export const SettingsSidebar = () => {
     { icon: Settings, label: language === 'vi' ? 'Cài đặt chung' : 'General Settings', path: '/settings/admin/general' },
     { icon: FolderOpen, label: language === 'vi' ? 'Danh mục' : 'Categories', path: '/settings/admin/categories' },
     { icon: Plug, label: 'Plugins', path: '/settings/admin/plugins' },
+    { icon: Trophy, label: 'Gamification', path: '/settings/admin/gamification' },
     { icon: Percent, label: language === 'vi' ? 'Hoa hồng' : 'Commission', path: '/settings/admin/commission' },
     { icon: Banknote, label: language === 'vi' ? 'Thanh toán' : 'Payments', path: '/settings/admin/payments' },
     { icon: BarChart3, label: language === 'vi' ? 'Thống kê' : 'Analytics', path: '/settings/admin/analytics' },

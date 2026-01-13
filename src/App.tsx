@@ -39,6 +39,7 @@ import { AdminPlugins } from "@/components/settings/admin/AdminPlugins";
 import { AdminCommission } from "@/components/settings/admin/AdminCommission";
 import { AdminPayments } from "@/components/settings/admin/AdminPayments";
 import { AdminAnalytics } from "@/components/settings/admin/AdminAnalytics";
+import { AdminGamification } from "@/components/settings/admin/AdminGamification";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,7 @@ const App = () => (
                     <Route path="admin/commission" element={<AdminCommission />} />
                     <Route path="admin/payments" element={<AdminPayments />} />
                     <Route path="admin/analytics" element={<AdminAnalytics />} />
+                    <Route path="admin/gamification" element={<AdminGamification />} />
                   </Route>
                   {/* Legacy redirects */}
                   <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
