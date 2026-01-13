@@ -14,6 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      community_settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      membership_answers: {
+        Row: {
+          answer_text: string
+          created_at: string
+          id: string
+          question_id: string
+          request_id: string
+        }
+        Insert: {
+          answer_text: string
+          created_at?: string
+          id?: string
+          question_id: string
+          request_id: string
+        }
+        Update: {
+          answer_text?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "membership_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_answers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "membership_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      membership_questions: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean | null
+          options: Json | null
+          order_index: number
+          question_text: string
+          question_text_en: string | null
+          question_type: Database["public"]["Enums"]["question_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          options?: Json | null
+          order_index?: number
+          question_text: string
+          question_text_en?: string | null
+          question_type?: Database["public"]["Enums"]["question_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          options?: Json | null
+          order_index?: number
+          question_text?: string
+          question_text_en?: string | null
+          question_type?: Database["public"]["Enums"]["question_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      membership_requests: {
+        Row: {
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["membership_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["membership_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["membership_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -89,6 +215,8 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "moderator" | "paid_member" | "free_member"
+      membership_status: "pending" | "approved" | "declined"
+      question_type: "text" | "multiple_choice" | "email"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -217,6 +345,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "moderator", "paid_member", "free_member"],
+      membership_status: ["pending", "approved", "declined"],
+      question_type: ["text", "multiple_choice", "email"],
     },
   },
 } as const
