@@ -1,0 +1,70 @@
+import React, { useState } from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { useLanguage } from '@/i18n/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MembershipRequestsPanel } from '@/components/admin/MembershipRequestsPanel';
+import { MembershipSettingsPanel } from '@/components/admin/MembershipSettingsPanel';
+import { Shield, Users, Settings } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+
+const Admin = () => {
+  const { language, t } = useLanguage();
+  const { user, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState('requests');
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return (
+    <MainLayout>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-8">
+          <Shield className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">
+              {language === 'vi' ? 'Quản trị cộng đồng' : 'Community Administration'}
+            </h1>
+            <p className="text-muted-foreground">
+              {language === 'vi' ? 'Quản lý thành viên và cài đặt cộng đồng' : 'Manage members and community settings'}
+            </p>
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="requests" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              {language === 'vi' ? 'Yêu cầu tham gia' : 'Membership Requests'}
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              {language === 'vi' ? 'Cài đặt câu hỏi' : 'Question Settings'}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="requests">
+            <MembershipRequestsPanel />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <MembershipSettingsPanel />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </MainLayout>
+  );
+};
+
+export default Admin;

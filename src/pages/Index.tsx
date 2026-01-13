@@ -1,14 +1,19 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMembership } from '@/hooks/useMembership';
+import { MembershipQuestionsModal } from '@/components/membership/MembershipQuestionsModal';
+import { PendingApprovalBanner } from '@/components/membership/PendingApprovalBanner';
 import { ArrowRight, BookOpen, Users, Trophy, Calendar } from 'lucide-react';
 
 const Index = () => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { user } = useAuth();
-
+  const { userRequest, questionsEnabled, refetch } = useMembership();
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
   const features = [
     {
       icon: BookOpen,
@@ -40,8 +45,30 @@ const Index = () => {
     },
   ];
 
+  // Determine if user needs to join (logged in but no request or not approved)
+  const needsToJoin = user && questionsEnabled && !userRequest;
+  const isPending = user && userRequest?.status === 'pending';
+  const isDeclined = user && userRequest?.status === 'declined';
+  const isApproved = user && userRequest?.status === 'approved';
+
+  const handleJoinClick = () => {
+    if (!user) {
+      // Redirect to auth if not logged in
+      window.location.href = '/auth';
+    } else {
+      setJoinModalOpen(true);
+    }
+  };
+
   return (
     <MainLayout>
+      {/* Membership Status Banner */}
+      {user && userRequest && (userRequest.status === 'pending' || userRequest.status === 'declined') && (
+        <div className="container px-4 mx-auto mt-4">
+          <PendingApprovalBanner status={userRequest.status} />
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 lg:py-32">
         <div className="container px-4 mx-auto">
@@ -53,12 +80,21 @@ const Index = () => {
               {t.welcome.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {user ? (
+              {isApproved ? (
                 <Button asChild size="lg" className="gap-2">
                   <Link to="/classroom">
                     {t.nav.classroom}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
+                </Button>
+              ) : needsToJoin ? (
+                <Button size="lg" className="gap-2" onClick={handleJoinClick}>
+                  {language === 'vi' ? 'Tham gia cộng đồng' : 'Join Community'}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : isPending || isDeclined ? (
+                <Button size="lg" className="gap-2" disabled>
+                  {language === 'vi' ? 'Đang chờ duyệt' : 'Pending Approval'}
                 </Button>
               ) : (
                 <>
@@ -126,9 +162,21 @@ const Index = () => {
                 <Link to="/auth">{t.welcome.getStarted}</Link>
               </Button>
             )}
+            {needsToJoin && (
+              <Button size="lg" onClick={handleJoinClick}>
+                {language === 'vi' ? 'Tham gia ngay' : 'Join Now'}
+              </Button>
+            )}
           </div>
         </div>
       </section>
+
+      {/* Membership Questions Modal */}
+      <MembershipQuestionsModal
+        open={joinModalOpen}
+        onOpenChange={setJoinModalOpen}
+        onSuccess={refetch}
+      />
     </MainLayout>
   );
 };
