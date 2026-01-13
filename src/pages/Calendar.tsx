@@ -1,60 +1,281 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { format, isSameDay } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { 
+  Calendar as CalendarIcon, 
+  List, 
+  Plus, 
+  Radio, 
+  ChevronDown,
+  ChevronRight
+} from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { useLanguage } from '@/i18n/LanguageContext';
-import { Calendar as CalendarIcon, Video, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { EventCard } from '@/components/calendar/EventCard';
+import { CalendarGrid } from '@/components/calendar/CalendarGrid';
+import { CreateEventModal } from '@/components/calendar/CreateEventModal';
+import { useLiveEvents, useUpcomingEvents, usePastEvents, Event } from '@/hooks/useEvents';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
-const Calendar = () => {
-  const { t, language } = useLanguage();
+type ViewMode = 'list' | 'calendar';
 
-  const upcomingEvents = [
-    {
-      title: language === 'vi' ? 'Webinar: Nghề Logistics 2026' : 'Webinar: Logistics Career 2026',
-      date: '15/01/2026',
-      time: '19:00 - 21:00',
-    },
-    {
-      title: 'Workshop: INCOTERMS 2020',
-      date: '22/01/2026',
-      time: '14:00 - 17:00',
-    },
-  ];
+interface GroupedEvents {
+  [dateKey: string]: Event[];
+}
+
+const Calendar: React.FC = () => {
+  const { isAdmin } = useUserRole();
+  const isMobile = useIsMobile();
+  
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDateEvents, setSelectedDateEvents] = useState<Pick<Event, 'id' | 'title' | 'start_date' | 'start_time' | 'status' | 'location_type'>[]>([]);
+  const [isPastExpanded, setIsPastExpanded] = useState(false);
+
+  const { data: liveEvents = [], isLoading: loadingLive } = useLiveEvents();
+  const { data: upcomingEvents = [], isLoading: loadingUpcoming } = useUpcomingEvents();
+  const { data: pastEvents = [], isLoading: loadingPast } = usePastEvents();
+
+  // Group upcoming events by date
+  const groupedUpcomingEvents = useMemo<GroupedEvents>(() => {
+    return upcomingEvents.reduce((groups, event) => {
+      const dateKey = event.start_date;
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(event);
+      return groups;
+    }, {} as GroupedEvents);
+  }, [upcomingEvents]);
+
+  const handleDateSelect = (date: Date, events: typeof selectedDateEvents) => {
+    setSelectedDate(date);
+    setSelectedDateEvents(events);
+  };
+
+  const formatDateHeader = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return format(date, "EEEE, dd/MM/yyyy", { locale: vi }).toUpperCase();
+  };
+
+  // Force list view on mobile
+  const effectiveViewMode = isMobile ? 'list' : viewMode;
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-            <CalendarIcon className="h-10 w-10 text-primary" />
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              📅 Lịch hoạt động
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Theo dõi các sự kiện và webinar của cộng đồng
+            </p>
           </div>
-          <h1 className="text-3xl font-bold mb-4">{t.calendar.title}</h1>
-          <p className="text-muted-foreground text-lg">{t.calendar.subtitle}</p>
+
+          <div className="flex items-center gap-2">
+            {/* View Toggle - Hide on mobile */}
+            {!isMobile && (
+              <div className="flex items-center bg-muted rounded-lg p-1">
+                <Button
+                  variant={effectiveViewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4" />
+                  <span className="hidden sm:inline">Danh sách</span>
+                </Button>
+                <Button
+                  variant={effectiveViewMode === 'calendar' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setViewMode('calendar')}
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  <span className="hidden sm:inline">Lịch tháng</span>
+                </Button>
+              </div>
+            )}
+
+            {/* Create Event Button - Admin only */}
+            {isAdmin && (
+              <Button onClick={() => setShowCreateModal(true)} className="gap-1.5">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Tạo sự kiện</span>
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-4">
-          {upcomingEvents.map((event, index) => (
-            <div key={index} className="border rounded-lg p-6 hover:border-primary/50 transition-colors">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Video className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{event.title}</h3>
-                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <CalendarIcon className="h-4 w-4" />
-                      {event.date}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {event.time}
-                    </span>
+        {/* Content */}
+        {effectiveViewMode === 'list' ? (
+          <div className="space-y-8">
+            {/* Live Events Section */}
+            {(loadingLive || liveEvents.length > 0) && (
+              <section>
+                <h2 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                  <Radio className="h-5 w-5 text-red-500 animate-pulse" />
+                  ĐANG DIỄN RA
+                </h2>
+                {loadingLive ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {[1, 2].map(i => (
+                      <Skeleton key={i} className="h-48 rounded-lg" />
+                    ))}
                   </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {liveEvents.map(event => (
+                      <EventCard key={event.id} event={event} isLive />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Upcoming Events Section */}
+            <section>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-4">
+                📆 SẮP TỚI
+              </h2>
+              {loadingUpcoming ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} className="h-40 rounded-lg" />
+                  ))}
                 </div>
-              </div>
+              ) : Object.keys(groupedUpcomingEvents).length === 0 ? (
+                <div className="text-center py-12 bg-muted/50 rounded-lg">
+                  <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-muted-foreground">Không có sự kiện sắp tới</p>
+                  {isAdmin && (
+                    <Button 
+                      variant="link" 
+                      className="mt-2"
+                      onClick={() => setShowCreateModal(true)}
+                    >
+                      Tạo sự kiện đầu tiên
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {Object.entries(groupedUpcomingEvents).map(([dateKey, events]) => (
+                    <div key={dateKey}>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-3 border-b pb-2">
+                        {formatDateHeader(dateKey)}
+                      </h3>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {events.map(event => (
+                          <EventCard key={event.id} event={event} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Past Events Section */}
+            {(loadingPast || pastEvents.length > 0) && (
+              <Collapsible open={isPastExpanded} onOpenChange={setIsPastExpanded}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between">
+                    <span className="flex items-center gap-2">
+                      📁 ĐÃ KẾT THÚC ({pastEvents.length})
+                    </span>
+                    {isPastExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+                  {loadingPast ? (
+                    <div className="space-y-4">
+                      {[1, 2].map(i => (
+                        <Skeleton key={i} className="h-32 rounded-lg" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 opacity-75">
+                      {pastEvents.map(event => (
+                        <EventCard key={event.id} event={event} />
+                      ))}
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+          </div>
+        ) : (
+          /* Calendar View */
+          <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
+            <CalendarGrid 
+              onSelectDate={handleDateSelect}
+              selectedDate={selectedDate}
+            />
+
+            {/* Selected Date Events */}
+            <div className="space-y-4">
+              <h3 className="font-semibold">
+                {selectedDate 
+                  ? format(selectedDate, "EEEE, dd/MM/yyyy", { locale: vi })
+                  : "Chọn ngày để xem sự kiện"
+                }
+              </h3>
+
+              {selectedDate && selectedDateEvents.length === 0 && (
+                <div className="text-center py-8 bg-muted/50 rounded-lg">
+                  <CalendarIcon className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Không có sự kiện trong ngày này
+                  </p>
+                </div>
+              )}
+
+              {selectedDateEvents.map(event => (
+                <div 
+                  key={event.id}
+                  className={cn(
+                    "p-3 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors",
+                    event.status === 'live' && "border-red-500 bg-red-500/5"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    {event.status === 'live' && (
+                      <Radio className="h-4 w-4 text-red-500 animate-pulse" />
+                    )}
+                    <span className="font-medium text-sm">{event.title}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {event.start_time.slice(0, 5)}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+      />
     </MainLayout>
   );
 };
