@@ -11,6 +11,7 @@ import { LevelUpCelebrationProvider } from "@/contexts/LevelUpCelebrationContext
 import { ReferralTracker } from "@/components/affiliate/ReferralTracker";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import Admin from "./pages/Admin";
 import MembershipRequestsPage from "./pages/MembershipRequestsPage";
 import Classroom from "./pages/Classroom";
@@ -58,6 +59,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/admin/membership-requests" element={<MembershipRequestsPage />} />
                   <Route path="/classroom" element={<Classroom />} />
