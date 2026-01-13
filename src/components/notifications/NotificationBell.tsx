@@ -37,6 +37,14 @@ const getNotificationIcon = (type: string) => {
       return '💰';
     case 'payout':
       return '💳';
+    case 'event_new':
+      return '📅';
+    case 'event_reminder_24h':
+      return '⏰';
+    case 'event_reminder_1h':
+      return '⏰';
+    case 'event_live':
+      return '🔴';
     default:
       return '🔔';
   }
