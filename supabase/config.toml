@@ -1,1 +1,4 @@
 project_id = "euusymuguvwruipxjnqp"
+
+[functions.track-referral-click]
+verify_jwt = false
