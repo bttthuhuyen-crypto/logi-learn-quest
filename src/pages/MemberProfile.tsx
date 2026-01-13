@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MemberProfileHeader } from '@/components/members/MemberProfileHeader';
 import { MemberStatsSection } from '@/components/members/MemberStatsSection';
-import { ActivityHeatmap } from '@/components/members/ActivityHeatmap';
+import { ActivityChart } from '@/components/members/ActivityChart';
 import { MemberActivityFeed } from '@/components/members/MemberActivityFeed';
 import { MemberPostsTab } from '@/components/members/MemberPostsTab';
 import { MemberFollowersTab } from '@/components/members/MemberFollowersTab';
@@ -14,7 +14,7 @@ import { MemberFollowingTab } from '@/components/members/MemberFollowingTab';
 import { MemberAdminActions } from '@/components/members/MemberAdminActions';
 import { useMemberProfile } from '@/hooks/useMemberProfile';
 import { useMemberStats } from '@/hooks/useMemberStats';
-import { useMemberActivities, useMemberActivityHeatmap } from '@/hooks/useMemberActivities';
+import { useMemberActivities } from '@/hooks/useMemberActivities';
 import { useIsFollowing, useToggleFollow } from '@/hooks/useUserFollows';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -32,8 +32,7 @@ const MemberProfile: React.FC = () => {
 
   const { data: member, isLoading: isLoadingProfile } = useMemberProfile(userId);
   const { data: stats, isLoading: isLoadingStats } = useMemberStats(userId);
-  const { data: heatmapData, isLoading: isLoadingHeatmap } = useMemberActivityHeatmap(userId);
-  const { 
+  const {
     data: activitiesData, 
     isLoading: isLoadingActivities,
     hasNextPage,
@@ -110,7 +109,7 @@ const MemberProfile: React.FC = () => {
           onTabChange={handleTabChange}
         />
 
-        {/* Activity Heatmap */}
+        {/* Activity Chart */}
         <Card className="mb-6">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -119,10 +118,7 @@ const MemberProfile: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ActivityHeatmap 
-              activities={heatmapData || []} 
-              isLoading={isLoadingHeatmap}
-            />
+            <ActivityChart userId={userId!} months={12} />
           </CardContent>
         </Card>
 
