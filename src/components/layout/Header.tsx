@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, X, Globe } from 'lucide-react';
+import { Search, Menu, X, Globe, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,23 +13,34 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { cn } from '@/lib/utils';
 
-const navItems = [
+interface NavItem {
+  key: string;
+  path: string;
+  adminOnly?: boolean;
+}
+
+const navItems: NavItem[] = [
   { key: 'community', path: '/community' },
   { key: 'classroom', path: '/classroom' },
   { key: 'calendar', path: '/calendar' },
   { key: 'members', path: '/members' },
   { key: 'leaderboard', path: '/leaderboard' },
-  { key: 'admin', path: '/admin' },
+  { key: 'admin', path: '/admin', adminOnly: true },
   { key: 'about', path: '/about' },
-] as const;
+];
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, signOut } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const { isAdmin } = useUserRole();
   const location = useLocation();
+
+  // Filter nav items based on role
+  const visibleNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
 
   const getInitials = (name: string | null) => {
     if (!name) return 'U';
@@ -51,17 +62,18 @@ export const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-1">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <Link
               key={item.key}
               to={item.path}
               className={cn(
-                'px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                'px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5',
                 location.pathname === item.path
                   ? 'bg-accent text-accent-foreground'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               )}
             >
+              {item.adminOnly && <Shield className="h-3.5 w-3.5" />}
               {t.nav[item.key as keyof typeof t.nav]}
             </Link>
           ))}
@@ -158,18 +170,19 @@ export const Header = () => {
             
             {/* Mobile Nav Items */}
             <nav className="flex flex-col gap-1">
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 <Link
                   key={item.key}
                   to={item.path}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    'px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                    'px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5',
                     location.pathname === item.path
                       ? 'bg-accent text-accent-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                   )}
                 >
+                  {item.adminOnly && <Shield className="h-3.5 w-3.5" />}
                   {t.nav[item.key as keyof typeof t.nav]}
                 </Link>
               ))}
