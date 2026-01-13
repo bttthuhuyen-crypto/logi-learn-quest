@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ReferralTracker } from "@/components/affiliate/ReferralTracker";
@@ -16,12 +16,22 @@ import Calendar from "./pages/Calendar";
 import Members from "./pages/Members";
 import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
-import AffiliateDashboard from "./pages/AffiliateDashboard";
-import Profile from "./pages/Profile";
-import NotificationSettings from "./pages/NotificationSettings";
 import Notifications from "./pages/Notifications";
 import Messenger from "./pages/Messenger";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
+import { SettingsProfile } from "@/components/settings/SettingsProfile";
+import { SettingsNotifications } from "@/components/settings/SettingsNotifications";
+import { SettingsPayment } from "@/components/settings/SettingsPayment";
+import { SettingsOrders } from "@/components/settings/SettingsOrders";
+import { SettingsAffiliate } from "@/components/settings/SettingsAffiliate";
+import { SettingsSecurity } from "@/components/settings/SettingsSecurity";
+import { AdminGeneralSettings } from "@/components/settings/admin/AdminGeneralSettings";
+import { AdminCategories } from "@/components/settings/admin/AdminCategories";
+import { AdminPlugins } from "@/components/settings/admin/AdminPlugins";
+import { AdminCommission } from "@/components/settings/admin/AdminCommission";
+import { AdminPayments } from "@/components/settings/admin/AdminPayments";
+import { AdminAnalytics } from "@/components/settings/admin/AdminAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -46,12 +56,28 @@ const App = () => (
               <Route path="/members" element={<Members />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/about" element={<About />} />
-              <Route path="/affiliate" element={<AffiliateDashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/settings/notifications" element={<NotificationSettings />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/messages" element={<Messenger />} />
               <Route path="/messages/:conversationId" element={<Messenger />} />
+              {/* Settings Routes */}
+              <Route path="/settings" element={<Settings />}>
+                <Route index element={<Navigate to="/settings/profile" replace />} />
+                <Route path="profile" element={<SettingsProfile />} />
+                <Route path="notifications" element={<SettingsNotifications />} />
+                <Route path="payment" element={<SettingsPayment />} />
+                <Route path="orders" element={<SettingsOrders />} />
+                <Route path="affiliate" element={<SettingsAffiliate />} />
+                <Route path="security" element={<SettingsSecurity />} />
+                <Route path="admin/general" element={<AdminGeneralSettings />} />
+                <Route path="admin/categories" element={<AdminCategories />} />
+                <Route path="admin/plugins" element={<AdminPlugins />} />
+                <Route path="admin/commission" element={<AdminCommission />} />
+                <Route path="admin/payments" element={<AdminPayments />} />
+                <Route path="admin/analytics" element={<AdminAnalytics />} />
+              </Route>
+              {/* Legacy redirects */}
+              <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
+              <Route path="/affiliate" element={<Navigate to="/settings/affiliate" replace />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
