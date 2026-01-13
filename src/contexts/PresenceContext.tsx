@@ -223,9 +223,19 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 export const usePresence = () => {
   const context = useContext(PresenceContext);
+  
+  // Return default values if context is not available (graceful degradation)
   if (!context) {
-    throw new Error('usePresence must be used within PresenceProvider');
+    return {
+      status: 'offline' as const,
+      showOnlineStatus: true,
+      lastActivity: new Date(),
+      updateStatus: () => {},
+      toggleVisibility: async () => {},
+      isUpdating: false,
+    };
   }
+  
   return context;
 };
 
