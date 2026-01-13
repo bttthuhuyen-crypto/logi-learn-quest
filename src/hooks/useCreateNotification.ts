@@ -113,6 +113,50 @@ export const useCreateNotification = () => {
     });
   };
 
+  const notifyNewEvent = async (userId: string, eventId: string, eventTitle: string) => {
+    return createNotification.mutateAsync({
+      user_id: userId,
+      type: 'event_new',
+      title: 'Sự kiện mới',
+      message: `"${eventTitle}" đã được tạo`,
+      target_type: 'event',
+      target_id: eventId,
+    });
+  };
+
+  const notifyEventReminder24h = async (userId: string, eventId: string, eventTitle: string) => {
+    return createNotification.mutateAsync({
+      user_id: userId,
+      type: 'event_reminder_24h',
+      title: 'Nhắc nhở sự kiện',
+      message: `"${eventTitle}" diễn ra vào ngày mai`,
+      target_type: 'event',
+      target_id: eventId,
+    });
+  };
+
+  const notifyEventReminder1h = async (userId: string, eventId: string, eventTitle: string) => {
+    return createNotification.mutateAsync({
+      user_id: userId,
+      type: 'event_reminder_1h',
+      title: 'Sắp bắt đầu',
+      message: `"${eventTitle}" trong 1 giờ nữa`,
+      target_type: 'event',
+      target_id: eventId,
+    });
+  };
+
+  const notifyEventLive = async (userId: string, eventId: string, eventTitle: string) => {
+    return createNotification.mutateAsync({
+      user_id: userId,
+      type: 'event_live',
+      title: 'Đang diễn ra',
+      message: `"${eventTitle}" đang diễn ra!`,
+      target_type: 'event',
+      target_id: eventId,
+    });
+  };
+
   return {
     createNotification: createNotification.mutate,
     createNotificationAsync: createNotification.mutateAsync,
@@ -125,5 +169,9 @@ export const useCreateNotification = () => {
     notifyComment,
     notifyFollow,
     notifyAnnouncement,
+    notifyNewEvent,
+    notifyEventReminder24h,
+    notifyEventReminder1h,
+    notifyEventLive,
   };
 };
