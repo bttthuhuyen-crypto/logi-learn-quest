@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, ArrowLeft, Image as ImageIcon, MoreVertical } from 'lucide-react';
+import { Send, Paperclip, ArrowLeft, Image as ImageIcon, MoreVertical, Ban, Flag, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,16 +9,21 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useMessages, Message } from '@/hooks/useMessages';
 import { MessageBubble } from './MessageBubble';
 import { ChatLockedOverlay } from './ChatLockedOverlay';
+import { BlockUserDialog } from './BlockUserDialog';
+import { ReportUserModal } from './ReportUserModal';
 import { ConversationWithDetails } from '@/hooks/useConversations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useChatUnlock } from '@/hooks/useChatUnlock';
+import { useBlockUser } from '@/hooks/useBlockUser';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatWindowProps {
   conversation: ConversationWithDetails | null;
@@ -33,18 +38,26 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onBack,
   isMobile = false,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const { canChat, requiredLevel, currentLevel } = useChatUnlock();
+  const { isUserBlocked, blockUser, unblockUser } = useBlockUser();
   const { messages, isLoading, sendMessage, markAsRead, deleteMessage } = useMessages(
     conversation?.id || null
   );
+
+  const otherUserId = conversation?.otherParticipant?.user_id || '';
+  const otherUserName = conversation?.otherParticipant?.full_name || 'Người dùng';
+  const isBlocked = otherUserId ? isUserBlocked(otherUserId) : false;
 
   // Mark as read when viewing conversation
   useEffect(() => {
@@ -137,6 +150,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const handleBlockToggle = async () => {
+    if (!otherUserId) return;
+    if (isBlocked) {
+      await unblockUser.mutateAsync(otherUserId);
+    } else {
+      await blockUser.mutateAsync(otherUserId);
+    }
+    setShowBlockDialog(false);
+  };
+
+  const handleViewProfile = () => {
+    if (otherUserId) {
+      navigate(`/members/${otherUserId}`);
+    }
+  };
+
   if (!conversation) return null;
 
   return (
@@ -166,8 +195,25 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Xem thông tin</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">Chặn người dùng</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleViewProfile}>
+              <User className="h-4 w-4 mr-2" />
+              {language === 'vi' ? 'Xem hồ sơ' : 'View profile'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setShowBlockDialog(true)}>
+              <Ban className="h-4 w-4 mr-2" />
+              {isBlocked 
+                ? (language === 'vi' ? 'Bỏ chặn' : 'Unblock')
+                : (language === 'vi' ? 'Chặn người dùng' : 'Block user')
+              }
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => setShowReportModal(true)}
+              className="text-destructive"
+            >
+              <Flag className="h-4 w-4 mr-2" />
+              {language === 'vi' ? 'Báo cáo' : 'Report'}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -209,7 +255,25 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </ScrollArea>
 
       {/* Input */}
-      {canChat ? (
+      {isBlocked ? (
+        <div className="flex items-center justify-center gap-2 py-4 px-4 bg-muted/50 border-t border-border">
+          <Ban className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            {language === 'vi' 
+              ? 'Bạn đã chặn người dùng này'
+              : 'You have blocked this user'
+            }
+          </span>
+          <Button 
+            variant="link" 
+            size="sm" 
+            className="p-0 h-auto"
+            onClick={() => setShowBlockDialog(true)}
+          >
+            {language === 'vi' ? 'Bỏ chặn' : 'Unblock'}
+          </Button>
+        </div>
+      ) : canChat ? (
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-2">
             <input
@@ -270,6 +334,24 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           variant="inline" 
         />
       )}
+
+      {/* Block Dialog */}
+      <BlockUserDialog
+        open={showBlockDialog}
+        onOpenChange={setShowBlockDialog}
+        userName={otherUserName}
+        isBlocked={isBlocked}
+        onConfirm={handleBlockToggle}
+        isPending={blockUser.isPending || unblockUser.isPending}
+      />
+
+      {/* Report Modal */}
+      <ReportUserModal
+        open={showReportModal}
+        onOpenChange={setShowReportModal}
+        userId={otherUserId}
+        userName={otherUserName}
+      />
     </div>
   );
 };
