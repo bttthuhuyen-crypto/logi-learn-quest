@@ -532,9 +532,18 @@ export const useCreateEvent = () => {
 
       if (error) throw error;
 
-      // TODO: If send_notification, queue email job
-      if (eventData.send_notification) {
-        console.log('Notification would be sent for event:', data.id);
+      // Send event notification if requested
+      if (eventData.send_notification && data.id) {
+        try {
+          const { error: notifError } = await supabase.functions.invoke('send-event-notification', {
+            body: { event_id: data.id },
+          });
+          if (notifError) {
+            console.error('Error sending event notification:', notifError);
+          }
+        } catch (notifError) {
+          console.error('Error invoking send-event-notification:', notifError);
+        }
       }
 
       return data;

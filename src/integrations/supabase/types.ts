@@ -584,8 +584,47 @@ export type Database = {
           },
         ]
       }
+      event_notification_logs: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          failed_sends: number | null
+          id: string
+          notification_type: string
+          successful_sends: number | null
+          total_recipients: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          failed_sends?: number | null
+          id?: string
+          notification_type: string
+          successful_sends?: number | null
+          total_recipients?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          failed_sends?: number | null
+          id?: string
+          notification_type?: string
+          successful_sends?: number | null
+          total_recipients?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_notification_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_reminders: {
         Row: {
+          channel: string | null
           event_id: string
           id: string
           reminder_type: Database["public"]["Enums"]["event_reminder_type"]
@@ -593,6 +632,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          channel?: string | null
           event_id: string
           id?: string
           reminder_type: Database["public"]["Enums"]["event_reminder_type"]
@@ -600,6 +640,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          channel?: string | null
           event_id?: string
           id?: string
           reminder_type?: Database["public"]["Enums"]["event_reminder_type"]

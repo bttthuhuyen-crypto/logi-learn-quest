@@ -25,6 +25,10 @@ const NOTIFICATION_SETTINGS_MAP: Record<string, string> = {
   'mention': 'notify_mentions',
   'follow': 'notify_followers',
   'following_post': 'notify_following_posts',
+  'event_new': 'email_event_reminders',
+  'event_reminder_24h': 'email_event_reminders',
+  'event_reminder_1h': 'email_event_reminders',
+  'event_live': 'email_event_reminders',
 };
 
 serve(async (req) => {
