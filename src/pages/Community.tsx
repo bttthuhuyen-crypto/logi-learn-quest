@@ -8,6 +8,7 @@ import { PinnedPosts } from '@/components/community/PinnedPosts';
 import { PostsList } from '@/components/community/PostsList';
 import { PostEditor, EditPostData } from '@/components/community/PostEditor';
 import { SidebarWidgets } from '@/components/community/sidebar/SidebarWidgets';
+import { UpcomingEventBanner } from '@/components/community/UpcomingEventBanner';
 import { useUserPostLikes, SortOption, Post } from '@/hooks/usePosts';
 import { usePinnedPosts } from '@/hooks/usePosts';
 import { useCategories } from '@/hooks/useCategories';
@@ -137,6 +138,9 @@ const Community = () => {
         <div className="flex gap-6">
           {/* Left Column - Main Content (70%) */}
           <div className="flex-1 min-w-0 lg:max-w-[70%] space-y-6">
+            {/* Event Banner - shows live or upcoming events in 24h */}
+            <UpcomingEventBanner />
+
             {/* Post Composer */}
             <PostComposer onOpenModal={handleOpenCreateModal} />
 

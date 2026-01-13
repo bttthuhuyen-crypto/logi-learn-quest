@@ -251,6 +251,44 @@ export const useMonthEvents = (year: number, month: number) => {
   });
 };
 
+// Fetch events for banner: live or within next 24 hours
+export const useBannerEvents = () => {
+  return useQuery({
+    queryKey: ['events', 'banner'],
+    queryFn: async () => {
+      const now = new Date();
+      const currentDate = now.toISOString().split('T')[0];
+      const currentTime = now.toTimeString().slice(0, 8);
+      
+      // Calculate 24 hours from now
+      const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const futureDate = in24Hours.toISOString().split('T')[0];
+      const futureTime = in24Hours.toTimeString().slice(0, 8);
+
+      // Query for live events or scheduled events within 24 hours
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, title, start_date, start_time, duration_minutes, status, location_type, location_url, attendee_count')
+        .in('status', ['scheduled', 'live'])
+        .or(
+          `status.eq.live,` +
+          `and(start_date.eq.${currentDate},start_time.gte.${currentTime}),` +
+          `and(start_date.eq.${futureDate},start_time.lte.${futureTime}),` +
+          `and(start_date.gt.${currentDate},start_date.lt.${futureDate})`
+        )
+        .order('status', { ascending: false }) // 'live' comes before 'scheduled'
+        .order('start_date', { ascending: true })
+        .order('start_time', { ascending: true })
+        .limit(5);
+
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: 60000, // Auto-refresh every minute
+    staleTime: 30000,
+  });
+};
+
 // RSVP to an event
 export const useEventRsvp = () => {
   const queryClient = useQueryClient();
