@@ -14,7 +14,7 @@ import { Loader2 } from 'lucide-react';
 interface AddSectionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (title: string) => Promise<void>;
+  onSubmit: (title: string) => Promise<{ data?: unknown; error: Error | null }>;
 }
 
 export const AddSectionModal: React.FC<AddSectionModalProps> = ({

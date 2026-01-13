@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 interface AddLessonModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (lesson: Partial<CourseLesson>) => Promise<void>;
+  onSubmit: (lesson: Partial<CourseLesson>) => Promise<{ data?: unknown; error: Error | null }>;
 }
 
 export const AddLessonModal: React.FC<AddLessonModalProps> = ({
