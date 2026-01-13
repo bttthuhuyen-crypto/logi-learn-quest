@@ -82,18 +82,19 @@ export function calculateProgress(
   };
 }
 
+// Updated color scheme: Gray 1-2, Green 3-4, Blue 5-6, Purple 7-8, Gold 9
 export function getLevelColor(level: number): string {
-  if (level >= 9) return 'text-yellow-500';
+  if (level >= 9) return 'text-amber-500';
   if (level >= 7) return 'text-purple-500';
   if (level >= 5) return 'text-blue-500';
   if (level >= 3) return 'text-green-500';
-  return 'text-muted-foreground';
+  return 'text-gray-500';
 }
 
 export function getLevelBgColor(level: number): string {
-  if (level >= 9) return 'bg-yellow-500/10 border-yellow-500/30';
+  if (level >= 9) return 'bg-gradient-to-r from-yellow-400/20 to-amber-500/20 border-amber-400/50';
   if (level >= 7) return 'bg-purple-500/10 border-purple-500/30';
   if (level >= 5) return 'bg-blue-500/10 border-blue-500/30';
   if (level >= 3) return 'bg-green-500/10 border-green-500/30';
-  return 'bg-muted/50 border-border';
+  return 'bg-gray-500/10 border-gray-500/30';
 }
