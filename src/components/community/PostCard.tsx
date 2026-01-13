@@ -398,41 +398,46 @@ export const PostCard: React.FC<PostCardProps> = ({
 // Content preview with "Xem thêm" functionality
 const ContentPreview: React.FC<{ content: string }> = ({ content }) => {
   const [expanded, setExpanded] = useState(false);
+
+  // Strip HTML tags to get plain text for length calculation
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
+  const plainText = stripHtml(content);
   const MAX_LENGTH = 200;
-  const shouldTruncate = content.length > MAX_LENGTH;
+  const shouldTruncate = plainText.length > MAX_LENGTH;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     setExpanded(!expanded);
   };
 
-  if (!shouldTruncate || expanded) {
-    return (
-      <div>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{content}</p>
-        {shouldTruncate && (
-          <button 
-            onClick={handleToggle}
-            className="text-sm font-medium text-foreground hover:underline mt-1"
-          >
-            Thu gọn
-          </button>
-        )}
-      </div>
-    );
-  }
+  // Truncate HTML content safely
+  const getTruncatedContent = () => {
+    if (!shouldTruncate || expanded) return content;
+    
+    // Create truncated plain text
+    const truncated = plainText.slice(0, MAX_LENGTH);
+    return `<p>${truncated}...</p>`;
+  };
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground">
-        {content.slice(0, MAX_LENGTH)}...{' '}
+      <div 
+        className="text-sm text-muted-foreground prose prose-sm max-w-none prose-p:my-1 prose-p:leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: getTruncatedContent() }}
+      />
+      {shouldTruncate && (
         <button 
           onClick={handleToggle}
-          className="font-medium text-foreground hover:underline"
+          className="text-sm font-medium text-foreground hover:underline mt-1"
         >
-          Xem thêm
+          {expanded ? 'Thu gọn' : 'Xem thêm'}
         </button>
-      </p>
+      )}
     </div>
   );
 };
