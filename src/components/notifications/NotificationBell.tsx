@@ -167,7 +167,7 @@ export const NotificationBell = () => {
         </div>
 
         {/* Notifications list */}
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[320px]">
           {isLoading ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               {language === 'vi' ? 'Đang tải...' : 'Loading...'}
@@ -181,7 +181,7 @@ export const NotificationBell = () => {
             </div>
           ) : (
             <div className="group">
-              {notifications.map((notification) => (
+              {notifications.slice(0, 5).map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
@@ -193,6 +193,22 @@ export const NotificationBell = () => {
             </div>
           )}
         </ScrollArea>
+
+        {/* Footer - View All */}
+        {notifications.length > 0 && (
+          <div className="p-2 border-t border-border">
+            <Button
+              variant="ghost"
+              className="w-full text-sm"
+              onClick={() => {
+                setOpen(false);
+                navigate('/notifications');
+              }}
+            >
+              {language === 'vi' ? 'Xem tất cả thông báo' : 'View all notifications'}
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
