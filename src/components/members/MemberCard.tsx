@@ -132,8 +132,6 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, viewMode }) => {
               level: member.level,
               points: member.points,
               role: member.role as any,
-              joined_at: member.joined_at,
-              last_active_at: member.last_active_at,
             }}
           />
         )}
@@ -213,8 +211,6 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, viewMode }) => {
             level: member.level,
             points: member.points,
             role: member.role as any,
-            joined_at: member.joined_at,
-            last_active_at: member.last_active_at,
           }}
         />
       )}
