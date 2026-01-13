@@ -1,89 +1,92 @@
 import React, { useState, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { useLanguage } from '@/i18n/LanguageContext';
-import { Trophy } from 'lucide-react';
-import { MyProgressCard } from '@/components/leaderboard/MyProgressCard';
-import { LevelRewardsPreview } from '@/components/leaderboard/LevelRewardsPreview';
-import { LeaderboardList, LeaderboardListRef } from '@/components/leaderboard/LeaderboardList';
-import { LevelRewardsModal } from '@/components/leaderboard/LevelRewardsModal';
 import { useMyProgress } from '@/hooks/useMyProgress';
 import { useLevelConfig } from '@/hooks/useLevelConfig';
+import { LeaderboardList, LeaderboardListRef } from '@/components/leaderboard/LeaderboardList';
+import { MyProgressCard } from '@/components/leaderboard/MyProgressCard';
+import { LevelRewardsPreview } from '@/components/leaderboard/LevelRewardsPreview';
+import { LevelRewardsModal } from '@/components/leaderboard/LevelRewardsModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { LeaderboardPeriod } from '@/hooks/useLeaderboard';
 
-const Leaderboard = () => {
-  const { t } = useLanguage();
+// Hardcoded community ID for now
+const COMMUNITY_ID = 'default-community';
+
+export default function Leaderboard() {
   const { user } = useAuth();
   const [showRewardsModal, setShowRewardsModal] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState<number | undefined>(undefined);
   const leaderboardRef = useRef<LeaderboardListRef>(null);
-
-  // TODO: Get actual community ID from context when multi-community is implemented
-  const communityId = undefined;
-
-  const { data: levelConfigData, isLoading: isConfigLoading } = useLevelConfig(communityId);
+  
+  const { data: levelConfigData, isLoading: isConfigLoading } = useLevelConfig(COMMUNITY_ID);
   const { data: myProgress, isLoading: isProgressLoading } = useMyProgress(
-    communityId,
+    COMMUNITY_ID,
     levelConfigData?.config
   );
 
-  // Handle rank click to scroll to user position
   const handleRankClick = (period: '7d' | '30d' | 'all') => {
     if (user?.id && leaderboardRef.current) {
-      leaderboardRef.current.scrollToUser(user.id, period as LeaderboardPeriod);
+      leaderboardRef.current.setPeriod(period);
+      setTimeout(() => {
+        leaderboardRef.current?.scrollToUser(user.id, period);
+      }, 100);
     }
   };
 
+  const handleLevelClick = (level: number) => {
+    setSelectedLevel(level);
+    setShowRewardsModal(true);
+  };
+
+  const handleModalOpenChange = (open: boolean) => {
+    setShowRewardsModal(open);
+    if (!open) {
+      setSelectedLevel(undefined);
+    }
+  };
+
+  // Transform rewards for the components
+  const transformedRewards = levelConfigData?.rewards?.map(r => ({
+    level: r.level,
+    rewardType: r.rewardType,
+    description: r.description,
+  }));
+
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Page Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <Trophy className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">{t.leaderboard.title}</h1>
-            <p className="text-muted-foreground">{t.leaderboard.subtitle}</p>
-          </div>
-        </div>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* My Progress Card */}
+        <MyProgressCard
+          progress={myProgress}
+          isLoading={isProgressLoading}
+          onRankClick={handleRankClick}
+        />
 
-        {/* Responsive Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Progress & Rewards */}
-          <div className="lg:col-span-1 space-y-6">
-            <MyProgressCard
-              progress={myProgress}
-              isLoading={isProgressLoading}
-              onRankClick={handleRankClick}
-            />
-            <LevelRewardsPreview
-              currentLevel={myProgress?.level || 1}
-              levelConfig={levelConfigData?.config}
-              rewards={levelConfigData?.rewards}
-              isLoading={isConfigLoading}
-              onViewDetails={() => setShowRewardsModal(true)}
-            />
-          </div>
+        {/* Level Rewards Preview */}
+        <LevelRewardsPreview
+          currentLevel={myProgress?.level || 1}
+          levelConfig={levelConfigData?.config}
+          rewards={transformedRewards}
+          isLoading={isConfigLoading}
+          onViewDetails={() => setShowRewardsModal(true)}
+          onLevelClick={handleLevelClick}
+        />
 
-          {/* Right Column - Leaderboard */}
-          <div className="lg:col-span-2">
-            <LeaderboardList
-              ref={leaderboardRef}
-              communityId={communityId}
-              levelConfig={levelConfigData?.config}
-            />
-          </div>
-        </div>
+        {/* Leaderboard */}
+        <LeaderboardList
+          ref={leaderboardRef}
+          communityId={COMMUNITY_ID}
+        />
       </div>
 
-      {/* Rewards Modal */}
+      {/* Level Rewards Modal */}
       <LevelRewardsModal
         open={showRewardsModal}
-        onOpenChange={setShowRewardsModal}
+        onOpenChange={handleModalOpenChange}
         currentLevel={myProgress?.level || 1}
         levelConfig={levelConfigData?.config}
-        rewards={levelConfigData?.rewards}
+        rewards={transformedRewards}
+        scrollToLevel={selectedLevel}
       />
     </MainLayout>
   );
-};
-
-export default Leaderboard;
+}
