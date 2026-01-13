@@ -72,6 +72,7 @@ interface CommonTranslations {
   hours: string;
   minutes: string;
   characters: string;
+  anonymous: string;
 }
 
 interface WelcomeTranslations {
@@ -288,6 +289,33 @@ interface MembersTranslations {
   joinedOn: string;
   online: string;
   offline: string;
+  // New filter translations
+  admins: string;
+  allRoles: string;
+  allStatus: string;
+  allLevels: string;
+  allJoined: string;
+  filterRoleAdmin: string;
+  filterRoleModerator: string;
+  filterRoleMember: string;
+  filterAway: string;
+  filterOffline: string;
+  filterLevel13: string;
+  filterLevel46: string;
+  filterLevel79: string;
+  filterJoinedWeek: string;
+  filterJoinedMonth: string;
+  filterJoined3Months: string;
+  filterJoined6Months: string;
+  filterJoinedYear: string;
+  sortRecent: string;
+  sortNewest: string;
+  sortLevel: string;
+  sortName: string;
+  clearFilters: string;
+  noMembersFound: string;
+  gridView: string;
+  listView: string;
 }
 
 interface LeaderboardTranslations {
@@ -544,6 +572,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       hours: 'giờ',
       minutes: 'phút',
       characters: 'ký tự',
+      anonymous: 'Ẩn danh',
     },
     welcome: {
       title: 'Chào mừng đến với 10X Logistics',
@@ -738,7 +767,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       title: 'Thành viên',
       memberCount: 'thành viên',
       searchPlaceholder: 'Tìm kiếm thành viên...',
-      filterOnline: 'Đang online',
+      filterOnline: 'Online',
       filterLevel: 'Cấp độ',
       filterJoinDate: 'Ngày tham gia',
       viewProfile: 'Xem hồ sơ',
@@ -752,6 +781,33 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       joinedOn: 'Tham gia ngày',
       online: 'Online',
       offline: 'Offline',
+      // New filter translations
+      admins: 'ADMINS',
+      allRoles: 'Tất cả vai trò',
+      allStatus: 'Tất cả trạng thái',
+      allLevels: 'Tất cả level',
+      allJoined: 'Tất cả thời gian',
+      filterRoleAdmin: 'Admins',
+      filterRoleModerator: 'Moderators',
+      filterRoleMember: 'Members',
+      filterAway: 'Away',
+      filterOffline: 'Offline',
+      filterLevel13: 'Level 1-3',
+      filterLevel46: 'Level 4-6',
+      filterLevel79: 'Level 7-9',
+      filterJoinedWeek: 'Tuần này',
+      filterJoinedMonth: 'Tháng này',
+      filterJoined3Months: '3 tháng',
+      filterJoined6Months: '6 tháng',
+      filterJoinedYear: '1 năm',
+      sortRecent: 'Hoạt động gần đây',
+      sortNewest: 'Mới tham gia',
+      sortLevel: 'Level cao nhất',
+      sortName: 'Tên A-Z',
+      clearFilters: 'Xóa bộ lọc',
+      noMembersFound: 'Không tìm thấy thành viên nào',
+      gridView: 'Grid',
+      listView: 'List',
     },
     leaderboard: {
       title: 'Bảng xếp hạng',
@@ -977,6 +1033,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       hours: 'hours',
       minutes: 'minutes',
       characters: 'characters',
+      anonymous: 'Anonymous',
     },
     welcome: {
       title: 'Welcome to 10X Logistics',
@@ -1185,6 +1242,33 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       joinedOn: 'Joined on',
       online: 'Online',
       offline: 'Offline',
+      // New filter translations
+      admins: 'ADMINS',
+      allRoles: 'All roles',
+      allStatus: 'All status',
+      allLevels: 'All levels',
+      allJoined: 'All time',
+      filterRoleAdmin: 'Admins',
+      filterRoleModerator: 'Moderators',
+      filterRoleMember: 'Members',
+      filterAway: 'Away',
+      filterOffline: 'Offline',
+      filterLevel13: 'Level 1-3',
+      filterLevel46: 'Level 4-6',
+      filterLevel79: 'Level 7-9',
+      filterJoinedWeek: 'This week',
+      filterJoinedMonth: 'This month',
+      filterJoined3Months: '3 months',
+      filterJoined6Months: '6 months',
+      filterJoinedYear: '1 year',
+      sortRecent: 'Recent activity',
+      sortNewest: 'Newest',
+      sortLevel: 'Highest level',
+      sortName: 'Name A-Z',
+      clearFilters: 'Clear filters',
+      noMembersFound: 'No members found',
+      gridView: 'Grid',
+      listView: 'List',
     },
     leaderboard: {
       title: 'Leaderboard',
