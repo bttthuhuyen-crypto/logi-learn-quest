@@ -17,6 +17,7 @@ import PostDetail from "./pages/PostDetail";
 import Calendar from "./pages/Calendar";
 import EventDetail from "./pages/EventDetail";
 import Members from "./pages/Members";
+import MemberProfile from "./pages/MemberProfile";
 import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
 import Notifications from "./pages/Notifications";
@@ -60,6 +61,7 @@ const App = () => (
                 <Route path="/calendar" element={<Calendar />} />
                 <Route path="/calendar/event/:eventId" element={<EventDetail />} />
                 <Route path="/members" element={<Members />} />
+                <Route path="/members/:userId" element={<MemberProfile />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/notifications" element={<Notifications />} />
