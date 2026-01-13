@@ -109,25 +109,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
-    // Debug logging
-    console.log('[Auth Debug] Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-    console.log('[Auth Debug] Redirect URL:', `${window.location.origin}/`);
-    console.log('[Auth Debug] Starting Google OAuth...');
+    try {
+      console.log('=== GOOGLE SIGN IN DEBUG ===');
+      console.log('Starting Google OAuth...');
+      
+      const currentOrigin = window.location.origin;
+      console.log('Current origin:', currentOrigin);
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${currentOrigin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    });
+      console.log('OAuth response:', { data, error });
 
-    if (error) {
-      console.error('[Auth Debug] Google OAuth Error:', error);
-    } else {
-      console.log('[Auth Debug] Google OAuth initiated:', data);
+      if (error) {
+        console.error('Google sign in error:', error);
+      }
+
+      return { error: error as Error | null };
+    } catch (error) {
+      console.error('Google sign in exception:', error);
+      return { error: error as Error };
     }
-
-    return { error: error as Error | null };
   };
 
   const signOut = async () => {
