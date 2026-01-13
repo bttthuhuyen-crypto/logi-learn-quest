@@ -31,6 +31,14 @@ export const useConversations = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
+      // Get blocked users
+      const { data: blockedData } = await supabase
+        .from('blocked_users')
+        .select('blocked_id')
+        .eq('blocker_id', user.id);
+      
+      const blockedUserIds = blockedData?.map(b => b.blocked_id) || [];
+
       // Get all conversations user participates in
       const { data: participations, error: partError } = await supabase
         .from('conversation_participants')
@@ -80,43 +88,50 @@ export const useConversations = () => {
 
       if (msgError) throw msgError;
 
-      // Build conversation details
-      const conversationsWithDetails: ConversationWithDetails[] = participations.map(p => {
-        const conversation = p.conversations as any;
-        const otherParticipant = allParticipants?.find(
-          ap => ap.conversation_id === p.conversation_id
-        );
-        const profile = otherParticipant?.profiles as any;
+      // Build conversation details (filter out blocked users)
+      const conversationsWithDetails = participations
+        .map(p => {
+          const conversation = p.conversations as any;
+          const otherParticipant = allParticipants?.find(
+            ap => ap.conversation_id === p.conversation_id
+          );
+          const profile = otherParticipant?.profiles as any;
+          
+          // Skip if other participant is blocked
+          if (profile && blockedUserIds.includes(profile.user_id)) {
+            return null;
+          }
         
-        // Get last message for this conversation
-        const lastMsg = lastMessages?.find(m => m.conversation_id === p.conversation_id);
-        
-        // Count unread messages
-        const unreadCount = lastMessages?.filter(m => 
-          m.conversation_id === p.conversation_id &&
-          m.sender_id !== user.id &&
-          (!p.last_read_at || new Date(m.created_at) > new Date(p.last_read_at))
-        ).length || 0;
+          // Get last message for this conversation
+          const lastMsg = lastMessages?.find(m => m.conversation_id === p.conversation_id);
+          
+          // Count unread messages
+          const unreadCount = lastMessages?.filter(m => 
+            m.conversation_id === p.conversation_id &&
+            m.sender_id !== user.id &&
+            (!p.last_read_at || new Date(m.created_at) > new Date(p.last_read_at))
+          ).length || 0;
 
-        return {
-          id: conversation.id,
-          type: conversation.type,
-          created_at: conversation.created_at,
-          updated_at: conversation.updated_at,
-          otherParticipant: profile ? {
-            user_id: profile.user_id,
-            full_name: profile.full_name,
-            avatar_url: profile.avatar_url,
-          } : null,
-          lastMessage: lastMsg ? {
-            content: lastMsg.content,
-            created_at: lastMsg.created_at,
-            sender_id: lastMsg.sender_id,
-            message_type: lastMsg.message_type,
-          } : null,
-          unreadCount,
-        };
-      });
+          return {
+            id: conversation.id,
+            type: conversation.type,
+            created_at: conversation.created_at,
+            updated_at: conversation.updated_at,
+            otherParticipant: profile ? {
+              user_id: profile.user_id,
+              full_name: profile.full_name,
+              avatar_url: profile.avatar_url,
+            } : null,
+            lastMessage: lastMsg ? {
+              content: lastMsg.content,
+              created_at: lastMsg.created_at,
+              sender_id: lastMsg.sender_id,
+              message_type: lastMsg.message_type as string,
+            } : null,
+            unreadCount,
+          } as ConversationWithDetails;
+        })
+        .filter((c): c is ConversationWithDetails => c !== null);
 
       // Sort by last message time
       return conversationsWithDetails.sort((a, b) => {
