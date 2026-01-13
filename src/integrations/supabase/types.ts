@@ -821,38 +821,59 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          company: string | null
           created_at: string
+          facebook_url: string | null
           full_name: string | null
           id: string
           level: number | null
+          linkedin_url: string | null
+          phone: string | null
           points: number | null
+          position: string | null
           preferred_language: string | null
           updated_at: string
           user_id: string
+          website_url: string | null
+          youtube_url: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          company?: string | null
           created_at?: string
+          facebook_url?: string | null
           full_name?: string | null
           id?: string
           level?: number | null
+          linkedin_url?: string | null
+          phone?: string | null
           points?: number | null
+          position?: string | null
           preferred_language?: string | null
           updated_at?: string
           user_id: string
+          website_url?: string | null
+          youtube_url?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          company?: string | null
           created_at?: string
+          facebook_url?: string | null
           full_name?: string | null
           id?: string
           level?: number | null
+          linkedin_url?: string | null
+          phone?: string | null
           points?: number | null
+          position?: string | null
           preferred_language?: string | null
           updated_at?: string
           user_id?: string
+          website_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
@@ -947,6 +968,9 @@ export type Database = {
           account_number: string | null
           bank_name: string
           branch: string | null
+          card_brand: string | null
+          card_exp_month: number | null
+          card_exp_year: number | null
           card_expiry: string | null
           card_holder_name: string | null
           card_last_four: string | null
@@ -962,6 +986,9 @@ export type Database = {
           account_number?: string | null
           bank_name: string
           branch?: string | null
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
           card_expiry?: string | null
           card_holder_name?: string | null
           card_last_four?: string | null
@@ -977,6 +1004,9 @@ export type Database = {
           account_number?: string | null
           bank_name?: string
           branch?: string | null
+          card_brand?: string | null
+          card_exp_month?: number | null
+          card_exp_year?: number | null
           card_expiry?: string | null
           card_holder_name?: string | null
           card_last_four?: string | null
@@ -1066,6 +1096,48 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_type: string | null
+          expires_at: string | null
+          id: string
+          ip_address: string | null
+          is_current: boolean | null
+          last_active_at: string | null
+          location: string | null
+          os: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_type?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          last_active_at?: string | null
+          location?: string | null
+          os?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_type?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          last_active_at?: string | null
+          location?: string | null
+          os?: string | null
           user_id?: string
         }
         Relationships: []
