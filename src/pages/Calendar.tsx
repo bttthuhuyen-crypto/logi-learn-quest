@@ -20,6 +20,7 @@ import {
 import { EventCard } from '@/components/calendar/EventCard';
 import { CalendarGrid } from '@/components/calendar/CalendarGrid';
 import { CreateEventModal } from '@/components/calendar/CreateEventModal';
+import { DeleteEventDialog } from '@/components/calendar/DeleteEventDialog';
 import { useLiveEvents, useUpcomingEvents, usePastEvents, Event } from '@/hooks/useEvents';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -40,6 +41,7 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState<Pick<Event, 'id' | 'title' | 'start_date' | 'start_time' | 'status' | 'location_type'>[]>([]);
   const [isPastExpanded, setIsPastExpanded] = useState(false);
+  const [deleteEvent, setDeleteEvent] = useState<Event | null>(null);
 
   const { data: liveEvents = [], isLoading: loadingLive } = useLiveEvents();
   const { data: upcomingEvents = [], isLoading: loadingUpcoming } = useUpcomingEvents();
@@ -138,7 +140,12 @@ const Calendar: React.FC = () => {
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     {liveEvents.map(event => (
-                      <EventCard key={event.id} event={event} isLive />
+                      <EventCard 
+                        key={event.id} 
+                        event={event} 
+                        variant="live"
+                        onDelete={setDeleteEvent}
+                      />
                     ))}
                   </div>
                 )}
@@ -179,7 +186,11 @@ const Calendar: React.FC = () => {
                       </h3>
                       <div className="grid gap-4 md:grid-cols-2">
                         {events.map(event => (
-                          <EventCard key={event.id} event={event} />
+                          <EventCard 
+                            key={event.id} 
+                            event={event}
+                            onDelete={setDeleteEvent}
+                          />
                         ))}
                       </div>
                     </div>
@@ -211,9 +222,14 @@ const Calendar: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="grid gap-4 md:grid-cols-2 opacity-75">
+                    <div className="grid gap-4 md:grid-cols-2">
                       {pastEvents.map(event => (
-                        <EventCard key={event.id} event={event} />
+                        <EventCard 
+                          key={event.id} 
+                          event={event} 
+                          isPast
+                          onDelete={setDeleteEvent}
+                        />
                       ))}
                     </div>
                   )}
@@ -275,6 +291,13 @@ const Calendar: React.FC = () => {
       <CreateEventModal
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
+      />
+
+      {/* Delete Event Dialog */}
+      <DeleteEventDialog
+        event={deleteEvent}
+        open={!!deleteEvent}
+        onOpenChange={(open) => !open && setDeleteEvent(null)}
       />
     </MainLayout>
   );
