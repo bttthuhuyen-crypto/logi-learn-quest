@@ -126,3 +126,77 @@ All colors MUST be HSL.
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* Leaflet Map Styles */
+.leaflet-container {
+  font-family: 'Inter', sans-serif;
+  z-index: 0;
+}
+
+.member-marker {
+  background: transparent;
+  border: none;
+}
+
+.your-location-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Custom cluster styles */
+.custom-cluster {
+  background: transparent;
+  border: none;
+}
+
+.cluster-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.cluster-icon.cluster-small {
+  width: 36px;
+  height: 36px;
+  background: hsl(142 76% 36%);
+  font-size: 12px;
+}
+
+.cluster-icon.cluster-medium {
+  width: 42px;
+  height: 42px;
+  background: hsl(45 93% 47%);
+  font-size: 14px;
+}
+
+.cluster-icon.cluster-large {
+  width: 48px;
+  height: 48px;
+  background: hsl(0 84% 60%);
+  font-size: 16px;
+}
+
+/* Leaflet popup customization */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem;
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 200px;
+}
+
+.leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+}
+
+/* Hide default Leaflet zoom control */
+.leaflet-control-zoom {
+  display: none;
+}

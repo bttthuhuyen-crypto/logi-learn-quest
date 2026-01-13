@@ -4,6 +4,7 @@ interface NavTranslations {
   community: string;
   classroom: string;
   calendar: string;
+  map: string;
   members: string;
   leaderboard: string;
   admin: string;
@@ -629,6 +630,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       community: 'Thảo luận',
       classroom: 'Học tập',
       calendar: 'Lịch',
+      map: 'Bản đồ',
       members: 'Thành viên',
       leaderboard: 'Bảng xếp hạng',
       admin: 'Quản trị cộng đồng',
@@ -1203,6 +1205,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       community: 'Community',
       classroom: 'Classroom',
       calendar: 'Calendar',
+      map: 'Map',
       members: 'Members',
       leaderboard: 'Leaderboard',
       admin: 'Admin',

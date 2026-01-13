@@ -26,6 +26,7 @@ import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
 import Notifications from "./pages/Notifications";
 import Messenger from "./pages/Messenger";
+import MapPage from "./pages/Map";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import { SettingsProfile } from "@/components/settings/SettingsProfile";
@@ -72,6 +73,7 @@ const App = () => (
                   <Route path="/members" element={<Members />} />
                   <Route path="/members/:userId" element={<MemberProfile />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/map" element={<MapPage />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/messages" element={<Messenger />} />

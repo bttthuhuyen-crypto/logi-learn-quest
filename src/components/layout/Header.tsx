@@ -22,6 +22,7 @@ const navItems: NavItem[] = [
   { key: 'community', path: '/community' },
   { key: 'classroom', path: '/classroom' },
   { key: 'calendar', path: '/calendar' },
+  { key: 'map', path: '/map' },
   { key: 'members', path: '/members' },
   { key: 'leaderboard', path: '/leaderboard' },
   { key: 'admin', path: '/admin', adminOnly: true },
