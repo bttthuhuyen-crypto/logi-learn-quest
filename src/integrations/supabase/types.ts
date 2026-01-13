@@ -289,6 +289,107 @@ export type Database = {
           },
         ]
       }
+      communities: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean | null
+          logo_url: string | null
+          member_count: number | null
+          name: string
+          owner_id: string
+          requires_approval: boolean | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          logo_url?: string | null
+          member_count?: number | null
+          name: string
+          owner_id: string
+          requires_approval?: boolean | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          logo_url?: string | null
+          member_count?: number | null
+          name?: string
+          owner_id?: string
+          requires_approval?: boolean | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_members: {
+        Row: {
+          comment_count: number | null
+          community_id: string
+          has_billing_access: boolean | null
+          id: string
+          joined_at: string
+          last_active_at: string | null
+          level: number | null
+          muted_until: string | null
+          points: number | null
+          post_count: number | null
+          role: Database["public"]["Enums"]["community_role"]
+          status: Database["public"]["Enums"]["member_status"]
+          user_id: string
+        }
+        Insert: {
+          comment_count?: number | null
+          community_id: string
+          has_billing_access?: boolean | null
+          id?: string
+          joined_at?: string
+          last_active_at?: string | null
+          level?: number | null
+          muted_until?: string | null
+          points?: number | null
+          post_count?: number | null
+          role?: Database["public"]["Enums"]["community_role"]
+          status?: Database["public"]["Enums"]["member_status"]
+          user_id: string
+        }
+        Update: {
+          comment_count?: number | null
+          community_id?: string
+          has_billing_access?: boolean | null
+          id?: string
+          joined_at?: string
+          last_active_at?: string | null
+          level?: number | null
+          muted_until?: string | null
+          points?: number | null
+          post_count?: number | null
+          role?: Database["public"]["Enums"]["community_role"]
+          status?: Database["public"]["Enums"]["member_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_settings: {
         Row: {
           created_at: string
@@ -856,6 +957,7 @@ export type Database = {
       }
       membership_requests: {
         Row: {
+          community_id: string | null
           created_at: string
           id: string
           reviewed_at: string | null
@@ -864,6 +966,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          community_id?: string | null
           created_at?: string
           id?: string
           reviewed_at?: string | null
@@ -872,6 +975,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          community_id?: string | null
           created_at?: string
           id?: string
           reviewed_at?: string | null
@@ -879,7 +983,15 @@ export type Database = {
           status?: Database["public"]["Enums"]["membership_status"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "membership_requests_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       message_reads: {
         Row: {
@@ -1488,6 +1600,7 @@ export type Database = {
           id: string
           level: number | null
           linkedin_url: string | null
+          location: string | null
           phone: string | null
           points: number | null
           position: string | null
@@ -1507,6 +1620,7 @@ export type Database = {
           id?: string
           level?: number | null
           linkedin_url?: string | null
+          location?: string | null
           phone?: string | null
           points?: number | null
           position?: string | null
@@ -1526,6 +1640,7 @@ export type Database = {
           id?: string
           level?: number | null
           linkedin_url?: string | null
+          location?: string | null
           phone?: string | null
           points?: number | null
           position?: string | null
@@ -1621,6 +1736,71 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_activities: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          community_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          points_earned: number | null
+          target_id: string | null
+          target_type: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          community_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          points_earned?: number | null
+          target_id?: string | null
+          target_type?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          community_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          points_earned?: number | null
+          target_id?: string | null
+          target_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activities_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
       }
       user_payment_methods: {
         Row: {
@@ -1834,6 +2014,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_activity_stats: {
+        Args: { p_community_id: string; p_user_id: string }
+        Returns: Json
+      }
+      calculate_level_from_points: {
+        Args: { p_points: number }
+        Returns: number
+      }
       generate_order_code: { Args: never; Returns: string }
       generate_recurring_events: {
         Args: { count_to_generate?: number; parent_id: string }
@@ -1928,6 +2116,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_online_members_count: {
+        Args: { p_community_id: string }
+        Returns: number
+      }
       get_upcoming_events: {
         Args: { limit_count?: number }
         Returns: {
@@ -1985,10 +2177,36 @@ export type Database = {
         Args: { blocked_user_id: string; blocker_user_id: string }
         Returns: boolean
       }
+      log_activity: {
+        Args: {
+          p_activity_type: Database["public"]["Enums"]["activity_type"]
+          p_community_id: string
+          p_metadata?: Json
+          p_target_id?: string
+          p_target_type?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      update_member_level: {
+        Args: { p_community_id: string; p_user_id: string }
+        Returns: number
+      }
     }
     Enums: {
+      activity_type:
+        | "post"
+        | "comment"
+        | "like"
+        | "follow"
+        | "join"
+        | "complete_course"
+        | "complete_lesson"
+        | "level_up"
+        | "earn_badge"
       app_role: "owner" | "admin" | "moderator" | "paid_member" | "free_member"
       category_sort: "default" | "new" | "top_week" | "top_month"
+      community_role: "owner" | "admin" | "moderator" | "member"
       event_location_type:
         | "skool_call"
         | "skool_webinar"
@@ -2003,6 +2221,7 @@ export type Database = {
       event_status: "scheduled" | "live" | "ended" | "cancelled"
       lesson_access_level: "public" | "member" | "level"
       media_type: "image" | "video" | "gif" | "link"
+      member_status: "active" | "muted" | "banned"
       membership_status: "pending" | "approved" | "declined"
       message_type: "text" | "image" | "file"
       payout_status: "pending" | "processing" | "completed" | "rejected"
@@ -2146,8 +2365,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_type: [
+        "post",
+        "comment",
+        "like",
+        "follow",
+        "join",
+        "complete_course",
+        "complete_lesson",
+        "level_up",
+        "earn_badge",
+      ],
       app_role: ["owner", "admin", "moderator", "paid_member", "free_member"],
       category_sort: ["default", "new", "top_week", "top_month"],
+      community_role: ["owner", "admin", "moderator", "member"],
       event_location_type: [
         "skool_call",
         "skool_webinar",
@@ -2163,6 +2394,7 @@ export const Constants = {
       event_status: ["scheduled", "live", "ended", "cancelled"],
       lesson_access_level: ["public", "member", "level"],
       media_type: ["image", "video", "gif", "link"],
+      member_status: ["active", "muted", "banned"],
       membership_status: ["pending", "approved", "declined"],
       message_type: ["text", "image", "file"],
       payout_status: ["pending", "processing", "completed", "rejected"],
