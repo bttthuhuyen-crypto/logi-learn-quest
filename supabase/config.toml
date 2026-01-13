@@ -2,3 +2,9 @@ project_id = "euusymuguvwruipxjnqp"
 
 [functions.track-referral-click]
 verify_jwt = false
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.auto-dm-on-approval]
+verify_jwt = false
