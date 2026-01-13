@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/collapsible';
 import { EventCard } from '@/components/calendar/EventCard';
 import { CalendarGrid } from '@/components/calendar/CalendarGrid';
-import { CreateEventModal } from '@/components/calendar/CreateEventModal';
+import { EventEditorModal } from '@/components/calendar/EventEditorModal';
 import { DeleteEventDialog } from '@/components/calendar/DeleteEventDialog';
 import { useLiveEvents, useUpcomingEvents, usePastEvents, Event } from '@/hooks/useEvents';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -37,11 +37,27 @@ const Calendar: React.FC = () => {
   const isMobile = useIsMobile();
   
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState<Pick<Event, 'id' | 'title' | 'start_date' | 'start_time' | 'status' | 'location_type'>[]>([]);
   const [isPastExpanded, setIsPastExpanded] = useState(false);
   const [deleteEvent, setDeleteEvent] = useState<Event | null>(null);
+
+  const handleCreateClick = () => {
+    setEditingEvent(null);
+    setShowEventModal(true);
+  };
+
+  const handleEditEvent = (event: Event) => {
+    setEditingEvent(event);
+    setShowEventModal(true);
+  };
+
+  const handleCloseEventModal = () => {
+    setShowEventModal(false);
+    setEditingEvent(null);
+  };
 
   const { data: liveEvents = [], isLoading: loadingLive } = useLiveEvents();
   const { data: upcomingEvents = [], isLoading: loadingUpcoming } = useUpcomingEvents();
@@ -113,7 +129,7 @@ const Calendar: React.FC = () => {
 
             {/* Create Event Button - Admin only */}
             {isAdmin && (
-              <Button onClick={() => setShowCreateModal(true)} className="gap-1.5">
+              <Button onClick={handleCreateClick} className="gap-1.5">
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Tạo sự kiện</span>
               </Button>
@@ -144,6 +160,7 @@ const Calendar: React.FC = () => {
                         key={event.id} 
                         event={event} 
                         variant="live"
+                        onEdit={handleEditEvent}
                         onDelete={setDeleteEvent}
                       />
                     ))}
@@ -171,7 +188,7 @@ const Calendar: React.FC = () => {
                     <Button 
                       variant="link" 
                       className="mt-2"
-                      onClick={() => setShowCreateModal(true)}
+                      onClick={handleCreateClick}
                     >
                       Tạo sự kiện đầu tiên
                     </Button>
@@ -189,6 +206,7 @@ const Calendar: React.FC = () => {
                           <EventCard 
                             key={event.id} 
                             event={event}
+                            onEdit={handleEditEvent}
                             onDelete={setDeleteEvent}
                           />
                         ))}
@@ -228,6 +246,7 @@ const Calendar: React.FC = () => {
                           key={event.id} 
                           event={event} 
                           isPast
+                          onEdit={handleEditEvent}
                           onDelete={setDeleteEvent}
                         />
                       ))}
@@ -287,10 +306,11 @@ const Calendar: React.FC = () => {
         )}
       </div>
 
-      {/* Create Event Modal */}
-      <CreateEventModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
+      {/* Event Editor Modal */}
+      <EventEditorModal
+        isOpen={showEventModal}
+        onClose={handleCloseEventModal}
+        editEvent={editingEvent}
       />
 
       {/* Delete Event Dialog */}
