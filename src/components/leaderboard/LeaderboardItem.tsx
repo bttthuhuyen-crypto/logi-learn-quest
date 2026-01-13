@@ -6,12 +6,17 @@ import { LeaderboardEntry } from '@/hooks/useLeaderboard';
 import { LevelBadge } from '@/components/community/LevelBadge';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { getLevelColor } from '@/utils/levelConfig';
+import { cn } from '@/lib/utils';
 
-interface LeaderboardItemProps {
+export interface LeaderboardItemProps {
   entry: LeaderboardEntry;
+  isCurrentUser?: boolean;
 }
 
-export const LeaderboardItem = React.memo(function LeaderboardItem({ entry }: LeaderboardItemProps) {
+export const LeaderboardItem = React.memo(function LeaderboardItem({ 
+  entry, 
+  isCurrentUser = false 
+}: LeaderboardItemProps) {
   const { formatNumber, t } = useLanguage();
 
   const getRankDisplay = (rank: number) => {
@@ -50,14 +55,13 @@ export const LeaderboardItem = React.memo(function LeaderboardItem({ entry }: Le
   return (
     <Link
       to={`/members/${entry.userId}`}
-      className={`
-        flex items-center gap-4 p-4 rounded-xl border transition-all
-        hover:bg-accent/50 hover:border-accent
-        ${isTopThree 
-          ? 'bg-gradient-to-r from-primary/5 to-transparent border-primary/20' 
-          : 'bg-card'
-        }
-      `}
+      className={cn(
+        'flex items-center gap-4 p-4 rounded-xl border transition-all',
+        'hover:bg-accent/50 hover:border-accent',
+        isTopThree && 'bg-gradient-to-r from-primary/5 to-transparent border-primary/20',
+        !isTopThree && 'bg-card',
+        isCurrentUser && 'ring-2 ring-primary/50 bg-primary/5'
+      )}
     >
       {/* Rank */}
       <div className="flex-shrink-0">

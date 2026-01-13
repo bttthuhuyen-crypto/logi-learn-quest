@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Trophy } from 'lucide-react';
 import { MyProgressCard } from '@/components/leaderboard/MyProgressCard';
 import { LevelRewardsPreview } from '@/components/leaderboard/LevelRewardsPreview';
-import { LeaderboardList } from '@/components/leaderboard/LeaderboardList';
+import { LeaderboardList, LeaderboardListRef } from '@/components/leaderboard/LeaderboardList';
 import { LevelRewardsModal } from '@/components/leaderboard/LevelRewardsModal';
 import { useMyProgress } from '@/hooks/useMyProgress';
 import { useLevelConfig } from '@/hooks/useLevelConfig';
+import { useAuth } from '@/contexts/AuthContext';
+import { LeaderboardPeriod } from '@/hooks/useLeaderboard';
 
 const Leaderboard = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [showRewardsModal, setShowRewardsModal] = useState(false);
+  const leaderboardRef = useRef<LeaderboardListRef>(null);
 
   // TODO: Get actual community ID from context when multi-community is implemented
   const communityId = undefined;
@@ -21,6 +25,13 @@ const Leaderboard = () => {
     communityId,
     levelConfigData?.config
   );
+
+  // Handle rank click to scroll to user position
+  const handleRankClick = (period: '7d' | '30d' | 'all') => {
+    if (user?.id && leaderboardRef.current) {
+      leaderboardRef.current.scrollToUser(user.id, period as LeaderboardPeriod);
+    }
+  };
 
   return (
     <MainLayout>
@@ -41,6 +52,7 @@ const Leaderboard = () => {
             <MyProgressCard
               progress={myProgress}
               isLoading={isProgressLoading}
+              onRankClick={handleRankClick}
             />
             <LevelRewardsPreview
               currentLevel={myProgress?.level || 1}
@@ -54,6 +66,7 @@ const Leaderboard = () => {
           {/* Right Column - Leaderboard */}
           <div className="lg:col-span-2">
             <LeaderboardList
+              ref={leaderboardRef}
               communityId={communityId}
               levelConfig={levelConfigData?.config}
             />
