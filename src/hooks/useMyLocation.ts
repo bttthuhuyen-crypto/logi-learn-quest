@@ -53,7 +53,7 @@ export const useMyLocation = () => {
         description: "Vị trí của bạn đã được lưu thành công.",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Lỗi",
         description: "Không thể cập nhật vị trí. Vui lòng thử lại.",
@@ -76,10 +76,36 @@ export const useMyLocation = () => {
     },
   });
 
+  const deleteLocation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('user_locations')
+        .delete()
+        .eq('user_id', user?.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-location'] });
+      queryClient.invalidateQueries({ queryKey: ['user-locations'] });
+      toast({
+        title: "Đã xóa vị trí",
+        description: "Vị trí của bạn đã được xóa khỏi bản đồ.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa vị trí. Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return { 
     myLocation, 
     isLoading, 
     updateLocation, 
-    toggleVisibility 
+    toggleVisibility,
+    deleteLocation,
   };
 };

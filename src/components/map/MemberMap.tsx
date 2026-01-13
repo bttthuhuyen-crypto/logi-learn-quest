@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useUserLocations, UserLocation } from "@/hooks/useUserLocations";
 import { useMyLocation } from "@/hooks/useMyLocation";
-import { MemberPopup } from "./MemberPopup";
+import { useAuth } from "@/contexts/AuthContext";
+import { MemberPopupContent, MemberPopupData } from "./MemberPopupContent";
 import { MapControls } from "./MapControls";
 
 // Fix for default marker icons in Leaflet with webpack/vite
@@ -16,21 +17,22 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Custom member marker
-const createMemberIcon = (avatarUrl?: string | null) => {
+// Custom member marker with avatar and online status
+const createMemberIcon = (avatarUrl?: string | null, isOnline?: boolean) => {
+  const onlineRing = isOnline ? 'ring-2 ring-green-500 ring-offset-1' : '';
   return L.divIcon({
     className: "member-marker",
     html: `
-      <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg border-2 border-white">
+      <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg border-2 border-white ${onlineRing}">
         ${avatarUrl 
           ? `<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" />`
-          : `<span class="text-xs text-primary-foreground font-bold">👤</span>`
+          : `<span class="text-sm text-primary-foreground font-bold">👤</span>`
         }
       </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
   });
 };
 
@@ -39,17 +41,17 @@ const yourLocationIcon = L.divIcon({
   className: "your-location-marker",
   html: `
     <div class="relative">
-      <div class="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
-        <span class="text-lg">📍</span>
+      <div class="w-12 h-12 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg border-3 border-white animate-pulse">
+        <span class="text-xl">📍</span>
       </div>
       <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-16 text-[10px] font-medium text-center bg-yellow-400 text-yellow-900 rounded px-1">
         Bạn
       </div>
     </div>
   `,
-  iconSize: [40, 48],
-  iconAnchor: [20, 48],
-  popupAnchor: [0, -48],
+  iconSize: [48, 56],
+  iconAnchor: [24, 56],
+  popupAnchor: [0, -56],
 });
 
 // Custom cluster icon
@@ -93,12 +95,25 @@ const MapEvents = ({ onLocationFound, flyToLocation }: MapEventsProps) => {
   return null;
 };
 
+// Helper to convert UserLocation to MemberPopupData
+const convertToPopupData = (location: UserLocation): MemberPopupData => ({
+  userId: location.userId,
+  fullName: location.fullName,
+  avatarUrl: location.avatarUrl,
+  level: location.level,
+  levelName: location.levelName,
+  isOnline: location.isOnline,
+  bio: location.bio,
+  displayName: location.displayName,
+});
+
 interface MemberMapProps {
   flyToLocation?: [number, number] | null;
   onUserLocationFound?: (lat: number, lng: number) => void;
 }
 
 export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps) => {
+  const { user } = useAuth();
   const { data: locations, isLoading } = useUserLocations();
   const { myLocation } = useMyLocation();
   const [selectedMember, setSelectedMember] = useState<UserLocation | null>(null);
@@ -107,14 +122,16 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
   const defaultCenter: [number, number] = [16.0, 108.0];
   const defaultZoom = 5;
 
-  // Create memoized markers
+  // Create memoized markers (excluding current user - shown separately)
   const memberMarkers = useMemo(() => {
     if (!locations) return [];
-    return locations.map((location) => ({
-      ...location,
-      icon: createMemberIcon(location.avatarUrl),
-    }));
-  }, [locations]);
+    return locations
+      .filter(location => location.userId !== user?.id)
+      .map((location) => ({
+        ...location,
+        icon: createMemberIcon(location.avatarUrl, location.isOnline),
+      }));
+  }, [locations, user?.id]);
 
   return (
     <MapContainer
@@ -154,8 +171,11 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
               click: () => setSelectedMember(location),
             }}
           >
-            <Popup>
-              <MemberPopup member={location} />
+            <Popup className="member-popup" maxWidth={320} minWidth={280}>
+              <MemberPopupContent 
+                member={convertToPopupData(location)}
+                isCurrentUser={false}
+              />
             </Popup>
           </Marker>
         ))}
@@ -166,17 +186,21 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
         <Marker
           position={[myLocation.latitude, myLocation.longitude]}
           icon={yourLocationIcon}
+          zIndexOffset={1000}
         >
-          <Popup>
-            <div className="p-2 text-center">
-              <p className="font-medium">Vị trí của bạn</p>
-              <p className="text-xs text-muted-foreground">
-                {myLocation.display_name || 
+          <Popup className="member-popup" maxWidth={320} minWidth={280}>
+            <MemberPopupContent 
+              member={{
+                userId: user?.id || '',
+                fullName: 'You',
+                avatarUrl: null,
+                level: 1,
+                displayName: myLocation.display_name || 
                   [myLocation.city, myLocation.country].filter(Boolean).join(', ') ||
-                  'Đã xác định'
-                }
-              </p>
-            </div>
+                  null,
+              }}
+              isCurrentUser={true}
+            />
           </Popup>
         </Marker>
       )}
