@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-
 export type EventStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 export type EventRsvpStatus = 'going' | 'maybe' | 'not_going';
 export type EventLocationType = 'skool_call' | 'skool_webinar' | 'zoom' | 'google_meet' | 'in_person' | 'other';
@@ -416,6 +416,157 @@ export const useDeleteEvent = () => {
         variant: 'destructive',
       });
       console.error('Delete event error:', error);
+    },
+  });
+};
+
+// Event form data type
+export interface EventFormData {
+  title: string;
+  start_date: Date;
+  start_time: string;
+  duration: number;
+  timezone: string;
+  is_recurring: boolean;
+  recurrence_pattern?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  recurrence_day_of_week?: number;
+  recurrence_end_type?: 'never' | 'on_date' | 'after_occurrences';
+  recurrence_end_date?: Date;
+  recurrence_occurrences?: number;
+  location_type: EventLocationType;
+  location_url?: string;
+  location_address?: string;
+  description?: string;
+  cover_image_url?: string;
+  send_notification?: boolean;
+}
+
+// Create event mutation
+export const useCreateEvent = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (eventData: EventFormData) => {
+      if (!user) throw new Error('Must be logged in');
+
+      const startDateTime = new Date(`${format(eventData.start_date, 'yyyy-MM-dd')}T${eventData.start_time}`);
+
+      const { data, error } = await supabase
+        .from('events')
+        .insert({
+          title: eventData.title,
+          description: eventData.description || null,
+          cover_image_url: eventData.cover_image_url || null,
+          start_at: startDateTime.toISOString(),
+          start_date: format(eventData.start_date, 'yyyy-MM-dd'),
+          start_time: eventData.start_time + ':00',
+          duration_minutes: eventData.duration,
+          timezone: eventData.timezone,
+          location_type: eventData.location_type,
+          location_url: eventData.location_url || null,
+          location_address: eventData.location_address || null,
+          is_recurring: eventData.is_recurring,
+          recurrence_pattern: eventData.is_recurring ? eventData.recurrence_pattern : null,
+          recurrence_day_of_week: eventData.recurrence_day_of_week ?? null,
+          recurrence_end_type: eventData.recurrence_end_type || null,
+          recurrence_end_date: eventData.recurrence_end_date 
+            ? format(eventData.recurrence_end_date, 'yyyy-MM-dd') 
+            : null,
+          recurrence_occurrences: eventData.recurrence_occurrences || null,
+          creator_id: user.id,
+          status: 'scheduled',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // TODO: If send_notification, queue email job
+      if (eventData.send_notification) {
+        console.log('Notification would be sent for event:', data.id);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast({
+        title: 'Thành công',
+        description: 'Sự kiện đã được tạo',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể tạo sự kiện. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
+      console.error('Create event error:', error);
+    },
+  });
+};
+
+// Update event mutation
+export const useUpdateEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ eventId, data }: { eventId: string; data: Partial<EventFormData> }) => {
+      const updateData: Record<string, unknown> = {};
+      
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.description !== undefined) updateData.description = data.description || null;
+      if (data.cover_image_url !== undefined) updateData.cover_image_url = data.cover_image_url || null;
+      if (data.timezone !== undefined) updateData.timezone = data.timezone;
+      if (data.location_type !== undefined) updateData.location_type = data.location_type;
+      if (data.location_url !== undefined) updateData.location_url = data.location_url || null;
+      if (data.location_address !== undefined) updateData.location_address = data.location_address || null;
+      if (data.is_recurring !== undefined) updateData.is_recurring = data.is_recurring;
+      if (data.recurrence_pattern !== undefined) updateData.recurrence_pattern = data.recurrence_pattern;
+      if (data.recurrence_day_of_week !== undefined) updateData.recurrence_day_of_week = data.recurrence_day_of_week;
+      if (data.recurrence_end_type !== undefined) updateData.recurrence_end_type = data.recurrence_end_type;
+      if (data.recurrence_occurrences !== undefined) updateData.recurrence_occurrences = data.recurrence_occurrences;
+      
+      if (data.start_date && data.start_time) {
+        const startDateTime = new Date(`${format(data.start_date, 'yyyy-MM-dd')}T${data.start_time}`);
+        updateData.start_at = startDateTime.toISOString();
+        updateData.start_date = format(data.start_date, 'yyyy-MM-dd');
+        updateData.start_time = data.start_time + ':00';
+      }
+
+      if (data.duration !== undefined) {
+        updateData.duration_minutes = data.duration;
+      }
+
+      if (data.recurrence_end_date !== undefined) {
+        updateData.recurrence_end_date = data.recurrence_end_date 
+          ? format(data.recurrence_end_date, 'yyyy-MM-dd') 
+          : null;
+      }
+
+      const { error } = await supabase
+        .from('events')
+        .update(updateData)
+        .eq('id', eventId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event'] });
+      toast({
+        title: 'Thành công',
+        description: 'Sự kiện đã được cập nhật',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể cập nhật sự kiện. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
+      console.error('Update event error:', error);
     },
   });
 };
