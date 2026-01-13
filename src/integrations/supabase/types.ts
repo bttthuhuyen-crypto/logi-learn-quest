@@ -907,6 +907,92 @@ export type Database = {
           },
         ]
       }
+      invite_links: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string
+          custom_message: string | null
+          expires_at: string | null
+          id: string
+          is_revoked: boolean | null
+          max_uses: number | null
+          role: Database["public"]["Enums"]["community_role"] | null
+          use_count: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by: string
+          custom_message?: string | null
+          expires_at?: string | null
+          id?: string
+          is_revoked?: boolean | null
+          max_uses?: number | null
+          role?: Database["public"]["Enums"]["community_role"] | null
+          use_count?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string
+          custom_message?: string | null
+          expires_at?: string | null
+          id?: string
+          is_revoked?: boolean | null
+          max_uses?: number | null
+          role?: Database["public"]["Enums"]["community_role"] | null
+          use_count?: number | null
+        }
+        Relationships: []
+      }
+      invite_logs: {
+        Row: {
+          clicked_at: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          invite_link_id: string | null
+          invite_type: string
+          invited_by: string | null
+          invited_user_id: string | null
+          joined_at: string | null
+          status: string | null
+        }
+        Insert: {
+          clicked_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          invite_link_id?: string | null
+          invite_type: string
+          invited_by?: string | null
+          invited_user_id?: string | null
+          joined_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          clicked_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          invite_link_id?: string | null
+          invite_type?: string
+          invited_by?: string | null
+          invited_user_id?: string | null
+          joined_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_logs_invite_link_id_fkey"
+            columns: ["invite_link_id"]
+            isOneToOne: false
+            referencedRelation: "invite_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_answers: {
         Row: {
           answer_text: string
@@ -2049,6 +2135,7 @@ export type Database = {
         Args: { p_points: number }
         Returns: number
       }
+      generate_invite_code: { Args: never; Returns: string }
       generate_order_code: { Args: never; Returns: string }
       generate_recurring_events: {
         Args: { count_to_generate?: number; parent_id: string }

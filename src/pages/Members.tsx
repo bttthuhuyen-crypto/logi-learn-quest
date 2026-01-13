@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { Users, Search, LayoutGrid, List } from 'lucide-react';
+import { Users, Search, LayoutGrid, List, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,9 +10,11 @@ import { MemberCard } from '@/components/members/MemberCard';
 import { MembersFilterBar } from '@/components/members/MembersFilterBar';
 import { MembersAdminSection } from '@/components/members/MembersAdminSection';
 import { MembersEmptyState } from '@/components/members/MembersEmptyState';
+import { InviteMembersModal } from '@/components/members/InviteMembersModal';
 import { useCommunityMembers, useMembersCount, MemberFilters } from '@/hooks/useCommunityMembers';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useUserRole } from '@/hooks/useUserRole';
 import {
   Pagination,
   PaginationContent,
@@ -25,7 +27,9 @@ import {
 const Members = () => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const { isAdmin } = useUserRole();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // Parse filters from URL
   const getFiltersFromURL = useCallback((): MemberFilters => {
@@ -155,6 +159,14 @@ const Members = () => {
                 />
               </div>
 
+              {/* Invite Button - Admin Only */}
+              {isAdmin && (
+                <Button onClick={() => setShowInviteModal(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">{t.admin.inviteMember}</span>
+                </Button>
+              )}
+
               {/* View Toggle - Hidden on mobile */}
               {!isMobile && (
                 <div className="flex items-center border rounded-md">
@@ -277,6 +289,12 @@ const Members = () => {
             </>
           )}
         </div>
+        
+        {/* Invite Members Modal */}
+        <InviteMembersModal 
+          open={showInviteModal} 
+          onOpenChange={setShowInviteModal} 
+        />
       </div>
     </MainLayout>
   );
