@@ -320,3 +320,33 @@ export const useEventAttendees = (eventId: string) => {
     enabled: !!eventId,
   });
 };
+
+// Delete event
+export const useDeleteEvent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (eventId: string) => {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast({
+        title: 'Đã xóa sự kiện',
+        description: 'Sự kiện đã được xóa thành công',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể xóa sự kiện. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
+      console.error('Delete event error:', error);
+    },
+  });
+};
