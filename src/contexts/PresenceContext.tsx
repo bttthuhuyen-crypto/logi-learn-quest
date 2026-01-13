@@ -21,7 +21,16 @@ const HEARTBEAT_INTERVAL = 30 * 1000; // 30 seconds
 const ACTIVITY_THROTTLE = 30 * 1000; // 30 seconds
 
 export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  // Use try-catch to handle cases where AuthProvider might not be ready (e.g., during hot reload)
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch {
+    // AuthProvider not ready yet, will render with null user
+    console.log('[Presence] AuthProvider not ready, waiting...');
+  }
+  
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<PresenceStatus>('offline');
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
