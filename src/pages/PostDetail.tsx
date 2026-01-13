@@ -387,9 +387,10 @@ const PostDetail: React.FC = () => {
 
               {/* Content */}
               {post.content && post.content_type === 'text' && (
-                <div className="prose prose-sm dark:prose-invert max-w-none mb-6">
-                  <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-                </div>
+                <div 
+                  className="prose prose-sm dark:prose-invert max-w-none mb-6 prose-p:my-2 prose-p:leading-relaxed prose-headings:mt-4 prose-headings:mb-2"
+                  dangerouslySetInnerHTML={{ __html: post.content }}
+                />
               )}
 
               {/* Poll */}
