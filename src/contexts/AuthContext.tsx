@@ -160,10 +160,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
+
+  // Be resilient to transient missing provider states (e.g. Fast Refresh / HMR)
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    if (import.meta.env.DEV) {
+      console.warn('[Auth] AuthProvider is not mounted yet. Returning a safe fallback context.');
+    }
+
+    const providerMissingError = new Error('AuthProvider is not mounted');
+
+    return {
+      user: null,
+      session: null,
+      profile: null,
+      loading: true,
+      signUp: async () => ({ error: providerMissingError }),
+      signIn: async () => ({ error: providerMissingError }),
+      signInWithGoogle: async () => ({ error: providerMissingError }),
+      signOut: async () => {},
+      refreshProfile: async () => {},
+    };
   }
+
   return context;
 };
