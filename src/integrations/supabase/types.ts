@@ -369,9 +369,12 @@ export type Database = {
           id: string
           joined_at: string
           last_active_at: string | null
+          last_level_up_at: string | null
           level: number | null
           muted_until: string | null
           points: number | null
+          points_30d: number | null
+          points_7d: number | null
           post_count: number | null
           role: Database["public"]["Enums"]["community_role"]
           status: Database["public"]["Enums"]["member_status"]
@@ -384,9 +387,12 @@ export type Database = {
           id?: string
           joined_at?: string
           last_active_at?: string | null
+          last_level_up_at?: string | null
           level?: number | null
           muted_until?: string | null
           points?: number | null
+          points_30d?: number | null
+          points_7d?: number | null
           post_count?: number | null
           role?: Database["public"]["Enums"]["community_role"]
           status?: Database["public"]["Enums"]["member_status"]
@@ -399,9 +405,12 @@ export type Database = {
           id?: string
           joined_at?: string
           last_active_at?: string | null
+          last_level_up_at?: string | null
           level?: number | null
           muted_until?: string | null
           points?: number | null
+          points_30d?: number | null
+          points_7d?: number | null
           post_count?: number | null
           role?: Database["public"]["Enums"]["community_role"]
           status?: Database["public"]["Enums"]["member_status"]
@@ -993,6 +1002,79 @@ export type Database = {
           },
         ]
       }
+      level_configs: {
+        Row: {
+          community_id: string
+          enabled: boolean | null
+          id: string
+          level_names: Json | null
+          points_required: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          community_id: string
+          enabled?: boolean | null
+          id?: string
+          level_names?: Json | null
+          points_required?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          community_id?: string
+          enabled?: boolean | null
+          id?: string
+          level_names?: Json | null
+          points_required?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "level_configs_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: true
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      level_rewards: {
+        Row: {
+          community_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          level: number
+          reward_type: Database["public"]["Enums"]["reward_type"]
+          reward_value: string | null
+        }
+        Insert: {
+          community_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          level: number
+          reward_type: Database["public"]["Enums"]["reward_type"]
+          reward_value?: string | null
+        }
+        Update: {
+          community_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          level?: number
+          reward_type?: Database["public"]["Enums"]["reward_type"]
+          reward_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "level_rewards_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_answers: {
         Row: {
           answer_text: string
@@ -1390,6 +1472,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      point_transactions: {
+        Row: {
+          community_id: string
+          created_at: string
+          granted_by: string | null
+          id: string
+          points: number
+          source_id: string | null
+          source_type: Database["public"]["Enums"]["point_source_type"]
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          points?: number
+          source_id?: string | null
+          source_type: Database["public"]["Enums"]["point_source_type"]
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          points?: number
+          source_id?: string | null
+          source_type?: Database["public"]["Enums"]["point_source_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       poll_options: {
         Row: {
@@ -2032,6 +2155,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_rewards: {
+        Row: {
+          claimed_at: string | null
+          community_id: string
+          id: string
+          level_reward_id: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          community_id: string
+          id?: string
+          level_reward_id: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          community_id?: string
+          id?: string
+          level_reward_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rewards_level_reward_id_fkey"
+            columns: ["level_reward_id"]
+            isOneToOne: false
+            referencedRelation: "level_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2127,6 +2289,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_point: {
+        Args: {
+          p_community_id: string
+          p_granted_by?: string
+          p_points?: number
+          p_source_id?: string
+          p_source_type: Database["public"]["Enums"]["point_source_type"]
+          p_user_id: string
+        }
+        Returns: Json
+      }
       calculate_activity_stats: {
         Args: { p_community_id: string; p_user_id: string }
         Returns: Json
@@ -2134,6 +2307,26 @@ export type Database = {
       calculate_level_from_points: {
         Args: { p_points: number }
         Returns: number
+      }
+      calculate_periodic_points: {
+        Args: { p_community_id?: string }
+        Returns: number
+      }
+      check_and_grant_rewards: {
+        Args: { p_community_id: string; p_new_level: number; p_user_id: string }
+        Returns: {
+          claimed_at: string | null
+          community_id: string
+          id: string
+          level_reward_id: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "user_rewards"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       generate_invite_code: { Args: never; Returns: string }
       generate_order_code: { Args: never; Returns: string }
@@ -2280,6 +2473,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_user_rank: {
+        Args: { p_community_id: string; p_period?: string; p_user_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2339,6 +2536,12 @@ export type Database = {
       membership_status: "pending" | "approved" | "declined"
       message_type: "text" | "image" | "file"
       payout_status: "pending" | "processing" | "completed" | "rejected"
+      point_source_type:
+        | "post_like"
+        | "comment_like"
+        | "reply_like"
+        | "bonus"
+        | "admin_grant"
       post_content_type: "text" | "poll"
       post_permission: "all" | "admin_only"
       presence_status: "online" | "away" | "offline"
@@ -2352,6 +2555,7 @@ export type Database = {
         | "impersonation"
         | "other"
       report_status: "pending" | "reviewed" | "resolved"
+      reward_type: "course_unlock" | "chat_access" | "badge" | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2512,6 +2716,13 @@ export const Constants = {
       membership_status: ["pending", "approved", "declined"],
       message_type: ["text", "image", "file"],
       payout_status: ["pending", "processing", "completed", "rejected"],
+      point_source_type: [
+        "post_like",
+        "comment_like",
+        "reply_like",
+        "bonus",
+        "admin_grant",
+      ],
       post_content_type: ["text", "poll"],
       post_permission: ["all", "admin_only"],
       presence_status: ["online", "away", "offline"],
@@ -2526,6 +2737,7 @@ export const Constants = {
         "other",
       ],
       report_status: ["pending", "reviewed", "resolved"],
+      reward_type: ["course_unlock", "chat_access", "badge", "custom"],
     },
   },
 } as const
