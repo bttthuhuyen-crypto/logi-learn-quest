@@ -11,6 +11,7 @@ import { ReferralTracker } from "@/components/affiliate/ReferralTracker";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import MembershipRequestsPage from "./pages/MembershipRequestsPage";
 import Classroom from "./pages/Classroom";
 import CourseEditor from "./pages/CourseEditor";
 import Community from "./pages/Community";
@@ -55,6 +56,7 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/admin/membership-requests" element={<MembershipRequestsPage />} />
                   <Route path="/classroom" element={<Classroom />} />
                   <Route path="/classroom/edit/:id" element={<CourseEditor />} />
                   <Route path="/classroom/:id" element={<CourseEditor />} />

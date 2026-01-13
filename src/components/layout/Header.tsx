@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, X, Shield, MessageCircle } from 'lucide-react';
+import { Search, Menu, X, Shield, MessageCircle, Inbox } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { usePendingRequestsCount } from '@/hooks/usePendingRequestsCount';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -31,6 +33,7 @@ export const Header = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { isAdmin } = useUserRole();
+  const { pendingCount } = usePendingRequestsCount();
   const location = useLocation();
 
   // Filter nav items based on role
@@ -52,13 +55,18 @@ export const Header = () => {
               to={item.path}
               className={cn(
                 'px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5',
-                location.pathname === item.path
+                location.pathname === item.path || (item.key === 'admin' && location.pathname.startsWith('/admin'))
                   ? 'bg-accent text-accent-foreground'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               )}
             >
               {item.adminOnly && <Shield className="h-3.5 w-3.5" />}
               {t.nav[item.key as keyof typeof t.nav]}
+              {item.key === 'admin' && isAdmin && pendingCount > 0 && (
+                <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px]">
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </Badge>
+              )}
             </Link>
           ))}
         </nav>
@@ -129,13 +137,18 @@ export const Header = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     'px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5',
-                    location.pathname === item.path
+                    location.pathname === item.path || (item.key === 'admin' && location.pathname.startsWith('/admin'))
                       ? 'bg-accent text-accent-foreground'
                       : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                   )}
                 >
                   {item.adminOnly && <Shield className="h-3.5 w-3.5" />}
                   {t.nav[item.key as keyof typeof t.nav]}
+                  {item.key === 'admin' && isAdmin && pendingCount > 0 && (
+                    <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px]">
+                      {pendingCount > 99 ? '99+' : pendingCount}
+                    </Badge>
+                  )}
                 </Link>
               ))}
             </nav>
