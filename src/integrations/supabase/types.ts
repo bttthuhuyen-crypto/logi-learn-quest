@@ -38,6 +38,151 @@ export type Database = {
         }
         Relationships: []
       }
+      course_lessons: {
+        Row: {
+          access_level:
+            | Database["public"]["Enums"]["lesson_access_level"]
+            | null
+          content: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          is_published: boolean | null
+          order_index: number | null
+          required_level: number | null
+          section_id: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          access_level?:
+            | Database["public"]["Enums"]["lesson_access_level"]
+            | null
+          content?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          is_published?: boolean | null
+          order_index?: number | null
+          required_level?: number | null
+          section_id: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          access_level?:
+            | Database["public"]["Enums"]["lesson_access_level"]
+            | null
+          content?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          is_published?: boolean | null
+          order_index?: number | null
+          required_level?: number | null
+          section_id?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lessons_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "course_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_sections: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          order_index: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_sections_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          cta_text: string | null
+          description: string | null
+          id: string
+          introduction_content: string | null
+          is_paid: boolean | null
+          is_published: boolean | null
+          order_index: number | null
+          price: number | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          cta_text?: string | null
+          description?: string | null
+          id?: string
+          introduction_content?: string | null
+          is_paid?: boolean | null
+          is_published?: boolean | null
+          order_index?: number | null
+          price?: number | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          cta_text?: string | null
+          description?: string | null
+          id?: string
+          introduction_content?: string | null
+          is_paid?: boolean | null
+          is_published?: boolean | null
+          order_index?: number | null
+          price?: number | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       membership_answers: {
         Row: {
           answer_text: string
@@ -215,6 +360,7 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "moderator" | "paid_member" | "free_member"
+      lesson_access_level: "public" | "member" | "level"
       membership_status: "pending" | "approved" | "declined"
       question_type: "text" | "multiple_choice" | "email"
     }
@@ -345,6 +491,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "moderator", "paid_member", "free_member"],
+      lesson_access_level: ["public", "member", "level"],
       membership_status: ["pending", "approved", "declined"],
       question_type: ["text", "multiple_choice", "email"],
     },
