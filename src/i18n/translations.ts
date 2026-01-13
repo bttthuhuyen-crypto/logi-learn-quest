@@ -12,6 +12,7 @@ interface NavTranslations {
   login: string;
   logout: string;
   profile: string;
+  affiliate: string;
 }
 
 interface AuthTranslations {
@@ -400,6 +401,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       login: 'Đăng nhập',
       logout: 'Đăng xuất',
       profile: 'Hồ sơ',
+      affiliate: 'Affiliate',
     },
     auth: {
       login: 'Đăng nhập',
@@ -753,6 +755,7 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       login: 'Login',
       logout: 'Logout',
       profile: 'Profile',
+      affiliate: 'Affiliate',
     },
     auth: {
       login: 'Login',
