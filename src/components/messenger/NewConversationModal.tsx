@@ -14,6 +14,8 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useChatUnlock } from '@/hooks/useChatUnlock';
+import { ChatLockedOverlay } from './ChatLockedOverlay';
 
 interface NewConversationModalProps {
   open: boolean;
@@ -26,9 +28,10 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
   onOpenChange,
   onSelectUser,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const { canChat, requiredLevel, currentLevel } = useChatUnlock();
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users-for-chat', searchQuery],
@@ -70,48 +73,59 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
           <DialogTitle>{t.messenger?.newConversation || 'Tạo cuộc trò chuyện mới'}</DialogTitle>
         </DialogHeader>
 
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t.messenger?.selectUser || 'Tìm kiếm người dùng...'}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        {!canChat ? (
+          <div className="py-4">
+            <ChatLockedOverlay 
+              requiredLevel={requiredLevel} 
+              currentLevel={currentLevel} 
+            />
+          </div>
+        ) : (
+          <>
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t.messenger?.selectUser || 'Tìm kiếm người dùng...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
 
-        <ScrollArea className="max-h-80">
-          {isLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="flex items-center gap-3 p-3">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <Skeleton className="h-4 w-32" />
+            <ScrollArea className="max-h-80">
+              {isLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="flex items-center gap-3 p-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>Không tìm thấy người dùng</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {users.map(u => (
-                <button
-                  key={u.user_id}
-                  onClick={() => handleSelectUser(u.user_id)}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={u.avatar_url || ''} />
-                    <AvatarFallback>{getInitials(u.full_name)}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{u.full_name || 'Người dùng'}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
+              ) : users.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>{language === 'vi' ? 'Không tìm thấy người dùng' : 'No users found'}</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {users.map(u => (
+                    <button
+                      key={u.user_id}
+                      onClick={() => handleSelectUser(u.user_id)}
+                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={u.avatar_url || ''} />
+                        <AvatarFallback>{getInitials(u.full_name)}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{u.full_name || 'Người dùng'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

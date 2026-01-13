@@ -1,15 +1,17 @@
 import React from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { ConversationWithDetails } from '@/hooks/useConversations';
 import { formatDistanceToNow } from 'date-fns';
 import { vi, enUS } from 'date-fns/locale';
+import { useChatUnlock } from '@/hooks/useChatUnlock';
 
 interface ConversationListProps {
   conversations: ConversationWithDetails[];
@@ -30,6 +32,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = React.useState('');
+  const { canChat, requiredLevel } = useChatUnlock();
 
   const filteredConversations = conversations.filter(conv => 
     conv.otherParticipant?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -89,9 +92,27 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold">{t.messenger?.title || 'Tin nhắn'}</h2>
-          <Button variant="ghost" size="icon" onClick={onNewConversation}>
-            <Plus className="h-5 w-5" />
-          </Button>
+          {canChat ? (
+            <Button variant="ghost" size="icon" onClick={onNewConversation}>
+              <Plus className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" disabled>
+                  <Lock className="h-5 w-5 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {language === 'vi' 
+                    ? `Cần đạt Level ${requiredLevel} để nhắn tin`
+                    : `Reach Level ${requiredLevel} to send messages`
+                  }
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
