@@ -1,6 +1,7 @@
 import React from 'react';
 import { PostCard } from './PostCard';
 import { usePosts, useUserPostLikes, SortOption } from '@/hooks/usePosts';
+import { useUserPostFollows } from '@/hooks/usePostFollows';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, RefreshCw } from 'lucide-react';
@@ -9,10 +10,11 @@ interface PostsListProps {
   categoryId: string | null;
   sort: SortOption;
   onOpenPost?: (postId: string) => void;
+  onCategoryClick?: (categoryId: string) => void;
 }
 
 const PostSkeleton = () => (
-  <div className="bg-card border border-border rounded-lg p-4 space-y-4">
+  <div className="bg-card border border-border rounded-xl p-4 space-y-4">
     <div className="flex items-center gap-3">
       <Skeleton className="h-10 w-10 rounded-full" />
       <div className="space-y-2">
@@ -33,7 +35,12 @@ const PostSkeleton = () => (
   </div>
 );
 
-export const PostsList: React.FC<PostsListProps> = ({ categoryId, sort, onOpenPost }) => {
+export const PostsList: React.FC<PostsListProps> = ({ 
+  categoryId, 
+  sort, 
+  onOpenPost,
+  onCategoryClick,
+}) => {
   const { data: posts, isLoading, isError, refetch } = usePosts({
     categoryId,
     sort,
@@ -45,6 +52,7 @@ export const PostsList: React.FC<PostsListProps> = ({ categoryId, sort, onOpenPo
   const postIds = regularPosts.map((post) => post.id);
   
   const { data: likedPostIds = [] } = useUserPostLikes(postIds);
+  const { data: followedPostIds = [] } = useUserPostFollows(postIds);
 
   if (isLoading) {
     return (
@@ -58,7 +66,7 @@ export const PostsList: React.FC<PostsListProps> = ({ categoryId, sort, onOpenPo
 
   if (isError) {
     return (
-      <div className="bg-card border border-border rounded-lg p-8 text-center">
+      <div className="bg-card border border-border rounded-xl p-8 text-center">
         <p className="text-muted-foreground mb-4">Không thể tải bài viết</p>
         <Button variant="outline" onClick={() => refetch()} className="gap-2">
           <RefreshCw className="h-4 w-4" />
@@ -70,7 +78,7 @@ export const PostsList: React.FC<PostsListProps> = ({ categoryId, sort, onOpenPo
 
   if (regularPosts.length === 0) {
     return (
-      <div className="bg-card border border-border rounded-lg p-12 text-center">
+      <div className="bg-card border border-border rounded-xl p-12 text-center">
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
           <MessageSquare className="h-8 w-8 text-muted-foreground" />
         </div>
@@ -89,7 +97,9 @@ export const PostsList: React.FC<PostsListProps> = ({ categoryId, sort, onOpenPo
           key={post.id}
           post={post}
           isLiked={likedPostIds.includes(post.id)}
+          isFollowing={followedPostIds.includes(post.id)}
           onOpenPost={onOpenPost}
+          onCategoryClick={onCategoryClick}
         />
       ))}
       
