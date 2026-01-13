@@ -547,6 +547,44 @@ interface SettingsTranslations {
   showOnlineStatusHint: string;
 }
 
+interface MemberSettingsTranslations {
+  title: string;
+  roleSection: string;
+  roleMember: string;
+  roleMemberDesc: string;
+  roleModerator: string;
+  roleModeratorDesc: string;
+  roleAdmin: string;
+  roleAdminDesc: string;
+  roleWarning: string;
+  billingAccess: string;
+  billingAccessLabel: string;
+  actionsSection: string;
+  muteUser: string;
+  unmuteUser: string;
+  muteDescription: string;
+  removeFromCommunity: string;
+  banPermanently: string;
+  membershipInfo: string;
+  joinedDate: string;
+  lastActive: string;
+  activitySummary: string;
+  postsCount: string;
+  commentsCount: string;
+  likesReceived: string;
+  mute1Hour: string;
+  mute24Hours: string;
+  mute7Days: string;
+  mute30Days: string;
+  muteForever: string;
+  removeConfirmTitle: string;
+  removeConfirmDesc: string;
+  banConfirmTitle: string;
+  banConfirmDesc: string;
+  banReasonLabel: string;
+  banReasonPlaceholder: string;
+}
+
 export interface TranslationKeys {
   nav: NavTranslations;
   auth: AuthTranslations;
@@ -571,6 +609,7 @@ export interface TranslationKeys {
   follow: FollowTranslations;
   presence: PresenceTranslations;
   settings: SettingsTranslations;
+  memberSettings: MemberSettingsTranslations;
 }
 
 export const translations: Record<'vi' | 'en', TranslationKeys> = {
@@ -1099,6 +1138,43 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       showOnlineStatus: 'Hiển thị trạng thái online',
       showOnlineStatusHint: 'Khi tắt, người khác sẽ không thấy bạn đang online',
     },
+    memberSettings: {
+      title: 'Cài đặt thành viên',
+      roleSection: 'Vai trò',
+      roleMember: 'Thành viên',
+      roleMemberDesc: 'Thành viên thông thường của cộng đồng',
+      roleModerator: 'Moderator',
+      roleModeratorDesc: 'Có thể quản lý nội dung và kiểm duyệt bài viết',
+      roleAdmin: 'Admin',
+      roleAdminDesc: 'Toàn quyền quản trị cộng đồng',
+      roleWarning: 'Thay đổi vai trò sẽ ảnh hưởng đến quyền của thành viên',
+      billingAccess: 'Quyền truy cập Billing',
+      billingAccessLabel: 'Cho phép truy cập billing và thanh toán',
+      actionsSection: 'Hành động',
+      muteUser: 'Tắt tiếng',
+      unmuteUser: 'Bỏ tắt tiếng',
+      muteDescription: 'Chọn thời gian tắt tiếng cho {name}',
+      removeFromCommunity: 'Xóa khỏi cộng đồng',
+      banPermanently: 'Cấm vĩnh viễn',
+      membershipInfo: 'Thông tin thành viên',
+      joinedDate: 'Ngày tham gia',
+      lastActive: 'Hoạt động cuối',
+      activitySummary: 'Thống kê hoạt động',
+      postsCount: 'Bài viết',
+      commentsCount: 'Bình luận',
+      likesReceived: 'Lượt thích nhận',
+      mute1Hour: '1 giờ',
+      mute24Hours: '24 giờ',
+      mute7Days: '7 ngày',
+      mute30Days: '30 ngày',
+      muteForever: 'Vĩnh viễn (cho đến khi bỏ)',
+      removeConfirmTitle: 'Xóa {name} khỏi cộng đồng?',
+      removeConfirmDesc: 'Thành viên sẽ bị xóa nhưng có thể đăng ký tham gia lại.',
+      banConfirmTitle: 'Cấm vĩnh viễn {name}?',
+      banConfirmDesc: 'Thành viên sẽ bị xóa và không thể tham gia lại. Email sẽ bị chặn.',
+      banReasonLabel: 'Lý do cấm (không bắt buộc)',
+      banReasonPlaceholder: 'Nhập lý do cấm thành viên này...',
+    },
   },
   en: {
     nav: {
@@ -1624,6 +1700,43 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       privacy: 'Privacy',
       showOnlineStatus: 'Show online status',
       showOnlineStatusHint: 'When off, others won\'t see when you\'re online',
+    },
+    memberSettings: {
+      title: 'Member Settings',
+      roleSection: 'Role',
+      roleMember: 'Member',
+      roleMemberDesc: 'Regular community member',
+      roleModerator: 'Moderator',
+      roleModeratorDesc: 'Can manage content and moderate posts',
+      roleAdmin: 'Admin',
+      roleAdminDesc: 'Full administrative access to the community',
+      roleWarning: 'Changing role will affect member permissions',
+      billingAccess: 'Billing Access',
+      billingAccessLabel: 'Allow access to billing and payments',
+      actionsSection: 'Actions',
+      muteUser: 'Mute',
+      unmuteUser: 'Unmute',
+      muteDescription: 'Select mute duration for {name}',
+      removeFromCommunity: 'Remove from community',
+      banPermanently: 'Ban permanently',
+      membershipInfo: 'Membership Info',
+      joinedDate: 'Joined',
+      lastActive: 'Last active',
+      activitySummary: 'Activity Summary',
+      postsCount: 'Posts',
+      commentsCount: 'Comments',
+      likesReceived: 'Likes received',
+      mute1Hour: '1 hour',
+      mute24Hours: '24 hours',
+      mute7Days: '7 days',
+      mute30Days: '30 days',
+      muteForever: 'Forever (until unmuted)',
+      removeConfirmTitle: 'Remove {name} from community?',
+      removeConfirmDesc: 'Member will be removed but can rejoin later.',
+      banConfirmTitle: 'Permanently ban {name}?',
+      banConfirmDesc: 'Member will be removed and cannot rejoin. Email will be blocked.',
+      banReasonLabel: 'Ban reason (optional)',
+      banReasonPlaceholder: 'Enter reason for banning this member...',
     },
   },
 };
