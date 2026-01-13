@@ -66,6 +66,7 @@ import { CommentsSection } from '@/components/community/CommentsSection';
 import { RelatedPostsWidget } from '@/components/community/RelatedPostsWidget';
 import { AuthorPostsWidget } from '@/components/community/AuthorPostsWidget';
 import { PostEditor, EditPostData } from '@/components/community/PostEditor';
+import { ReportPostModal } from '@/components/community/ReportPostModal';
 
 const PostDetail: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -73,6 +74,7 @@ const PostDetail: React.FC = () => {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [isLikeAnimating, setIsLikeAnimating] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -363,11 +365,15 @@ const PostDetail: React.FC = () => {
                       </>
                     )}
 
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <Flag className="h-4 w-4 mr-2" />
-                      Báo cáo
-                    </DropdownMenuItem>
+                    {!isAuthor && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setShowReportModal(true)}>
+                          <Flag className="h-4 w-4 mr-2" />
+                          Báo cáo
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -521,6 +527,14 @@ const PostDetail: React.FC = () => {
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         editPost={editPostData}
+      />
+
+      {/* Report Post Modal */}
+      <ReportPostModal
+        open={showReportModal}
+        onOpenChange={setShowReportModal}
+        postId={post?.id || ''}
+        postTitle={post?.title || ''}
       />
     </MainLayout>
   );
