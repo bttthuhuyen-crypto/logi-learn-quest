@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PostComposer } from '@/components/community/PostComposer';
 import { CategoryChips } from '@/components/community/CategoryChips';
@@ -12,17 +13,33 @@ import { NewMembersWidget } from '@/components/community/sidebar/NewMembersWidge
 import { CommunityStats } from '@/components/community/sidebar/CommunityStats';
 import { useUserPostLikes, SortOption } from '@/hooks/usePosts';
 import { usePinnedPosts } from '@/hooks/usePosts';
+import { useCategories } from '@/hooks/useCategories';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 
 const Community = () => {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const categorySlug = searchParams.get('category');
+  
+  // Fetch categories
+  const { data: categories } = useCategories();
+  
+  // Find selected category by slug
+  const selectedCategory = useMemo(() => {
+    if (!categorySlug || !categories) return null;
+    return categories.find(c => c.slug === categorySlug) || null;
+  }, [categorySlug, categories]);
+  
+  const selectedCategoryId = selectedCategory?.id || null;
+
+  // Sort state with user override tracking
   const [sortOption, setSortOption] = useState<SortOption>(() => {
-    // Persist sort selection in session
     const saved = sessionStorage.getItem('community-sort');
     return (saved as SortOption) || 'default';
   });
+  const [isUserOverriddenSort, setIsUserOverriddenSort] = useState(false);
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createModalType, setCreateModalType] = useState<'text' | 'poll'>('text');
 
@@ -35,6 +52,40 @@ const Community = () => {
   useEffect(() => {
     sessionStorage.setItem('community-sort', sortOption);
   }, [sortOption]);
+
+  // Handle category selection with URL params and default sort
+  const handleSelectCategory = (categoryId: string | null, defaultSort?: SortOption) => {
+    if (categoryId === null) {
+      // Clear category from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('category');
+      setSearchParams(newParams, { replace: true });
+      
+      // Reset to default sort if user hasn't manually changed it
+      if (!isUserOverriddenSort) {
+        setSortOption('default');
+      }
+    } else {
+      // Find category and update URL with slug
+      const category = categories?.find(c => c.id === categoryId);
+      if (category) {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('category', category.slug);
+        setSearchParams(newParams, { replace: true });
+        
+        // Apply category's default_sort if user hasn't manually changed sort
+        if (!isUserOverriddenSort && defaultSort) {
+          setSortOption(defaultSort);
+        }
+      }
+    }
+  };
+
+  // Handle user manually changing sort
+  const handleSortChange = (sort: SortOption) => {
+    setSortOption(sort);
+    setIsUserOverriddenSort(true);
+  };
 
   const handleOpenCreateModal = (type: 'text' | 'poll' = 'text') => {
     setCreateModalType(type);
@@ -69,10 +120,10 @@ const Community = () => {
               <div className="flex-1 min-w-0">
                 <CategoryChips
                   selectedCategoryId={selectedCategoryId}
-                  onSelectCategory={setSelectedCategoryId}
+                  onSelectCategory={handleSelectCategory}
                 />
               </div>
-              <SortDropdown value={sortOption} onChange={setSortOption} />
+              <SortDropdown value={sortOption} onChange={handleSortChange} />
             </div>
 
             {/* Pinned Posts */}
