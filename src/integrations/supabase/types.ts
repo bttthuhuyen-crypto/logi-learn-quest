@@ -888,6 +888,54 @@ export type Database = {
           },
         ]
       }
+      user_payment_methods: {
+        Row: {
+          account_holder_name: string | null
+          account_number: string | null
+          bank_name: string
+          branch: string | null
+          card_expiry: string | null
+          card_holder_name: string | null
+          card_last_four: string | null
+          created_at: string
+          id: string
+          is_default: boolean | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          account_number?: string | null
+          bank_name: string
+          branch?: string | null
+          card_expiry?: string | null
+          card_holder_name?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          account_number?: string | null
+          bank_name?: string
+          branch?: string | null
+          card_expiry?: string | null
+          card_holder_name?: string | null
+          card_last_four?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           last_seen_at: string | null
