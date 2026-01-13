@@ -719,6 +719,59 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          amount: number
+          course_id: string | null
+          created_at: string
+          failed_at: string | null
+          id: string
+          invoice_url: string | null
+          order_code: string
+          paid_at: string | null
+          payment_method: string
+          status: string
+          transaction_code: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          course_id?: string | null
+          created_at?: string
+          failed_at?: string | null
+          id?: string
+          invoice_url?: string | null
+          order_code: string
+          paid_at?: string | null
+          payment_method: string
+          status?: string
+          transaction_code?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          course_id?: string | null
+          created_at?: string
+          failed_at?: string | null
+          id?: string
+          invoice_url?: string | null
+          order_code?: string
+          paid_at?: string | null
+          payment_method?: string
+          status?: string
+          transaction_code?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payout_requests: {
         Row: {
           amount: number
@@ -1022,6 +1075,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_order_code: { Args: never; Returns: string }
       generate_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {
