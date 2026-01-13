@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MembershipRequestsPanel } from '@/components/admin/MembershipRequestsPanel';
 import { MembershipSettingsPanel } from '@/components/admin/MembershipSettingsPanel';
 import { AffiliateSettingsPanel } from '@/components/admin/AffiliateSettingsPanel';
-import { Shield, Users, Settings, Handshake } from 'lucide-react';
+import { PayoutRequestsPanel } from '@/components/admin/PayoutRequestsPanel';
+import { Shield, Users, Settings, Handshake, Wallet } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 const Admin = () => {
@@ -50,7 +51,7 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               {language === 'vi' ? 'Yêu cầu tham gia' : 'Membership Requests'}
@@ -62,6 +63,10 @@ const Admin = () => {
             <TabsTrigger value="affiliate" className="flex items-center gap-2">
               <Handshake className="h-4 w-4" />
               {language === 'vi' ? 'Cài đặt Affiliate' : 'Affiliate Settings'}
+            </TabsTrigger>
+            <TabsTrigger value="payouts" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              {language === 'vi' ? 'Yêu cầu rút tiền' : 'Payout Requests'}
             </TabsTrigger>
           </TabsList>
 
@@ -75,6 +80,10 @@ const Admin = () => {
 
           <TabsContent value="affiliate">
             <AffiliateSettingsPanel />
+          </TabsContent>
+
+          <TabsContent value="payouts">
+            <PayoutRequestsPanel />
           </TabsContent>
         </Tabs>
       </div>
