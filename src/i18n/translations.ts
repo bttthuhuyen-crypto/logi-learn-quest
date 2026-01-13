@@ -478,6 +478,44 @@ interface PaymentMethodsTranslations {
   deleted: string;
 }
 
+interface MemberProfileTranslations {
+  backButton: string;
+  sendMessage: string;
+  follow: string;
+  unfollow: string;
+  posts: string;
+  followers: string;
+  followingLabel: string;
+  points: string;
+  tabActivity: string;
+  tabPosts: string;
+  tabFollowers: string;
+  tabFollowing: string;
+  activityTitle: string;
+  activityTooltip: string;
+  activityPost: string;
+  activityComment: string;
+  activityLike: string;
+  activityFollow: string;
+  activityJoin: string;
+  activityCourse: string;
+  activityLesson: string;
+  adminSection: string;
+  adminSettings: string;
+  memberSince: string;
+  lastActive: string;
+  role: string;
+  status: string;
+  noActivities: string;
+  noPosts: string;
+  noFollowers: string;
+  noFollowing: string;
+  loadMore: string;
+  less: string;
+  more: string;
+  notFound: string;
+}
+
 export interface TranslationKeys {
   nav: NavTranslations;
   auth: AuthTranslations;
@@ -498,6 +536,7 @@ export interface TranslationKeys {
   status: StatusTranslations;
   errors: ErrorTranslations;
   paymentMethods: PaymentMethodsTranslations;
+  memberProfile: MemberProfileTranslations;
 }
 
 export const translations: Record<'vi' | 'en', TranslationKeys> = {
