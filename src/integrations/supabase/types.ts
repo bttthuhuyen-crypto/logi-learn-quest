@@ -549,50 +549,194 @@ export type Database = {
         }
         Relationships: []
       }
+      event_attendees: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          joined_at: string | null
+          status: Database["public"]["Enums"]["event_rsvp_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          joined_at?: string | null
+          status?: Database["public"]["Enums"]["event_rsvp_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          joined_at?: string | null
+          status?: Database["public"]["Enums"]["event_rsvp_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendees_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_reminders: {
+        Row: {
+          event_id: string
+          id: string
+          reminder_type: Database["public"]["Enums"]["event_reminder_type"]
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          reminder_type: Database["public"]["Enums"]["event_reminder_type"]
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          reminder_type?: Database["public"]["Enums"]["event_reminder_type"]
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reminders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
+          attendee_count: number
+          community_id: string | null
           cover_image_url: string | null
           created_at: string | null
-          created_by: string | null
+          creator_id: string | null
           description: string | null
+          duration_minutes: number
           end_at: string | null
           event_type: string | null
           id: string
-          location: string | null
+          is_recurring: boolean
+          location_address: string | null
+          location_type:
+            | Database["public"]["Enums"]["event_location_type"]
+            | null
+          location_url: string | null
           meeting_url: string | null
+          parent_event_id: string | null
+          recurrence_day_of_week: number | null
+          recurrence_end_date: string | null
+          recurrence_end_type:
+            | Database["public"]["Enums"]["event_recurrence_end_type"]
+            | null
+          recurrence_occurrences: number | null
+          recurrence_pattern:
+            | Database["public"]["Enums"]["event_recurrence_pattern"]
+            | null
+          skool_call_id: string | null
           start_at: string
+          start_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["event_status"]
+          timezone: string
           title: string
           updated_at: string | null
         }
         Insert: {
+          attendee_count?: number
+          community_id?: string | null
           cover_image_url?: string | null
           created_at?: string | null
-          created_by?: string | null
+          creator_id?: string | null
           description?: string | null
+          duration_minutes?: number
           end_at?: string | null
           event_type?: string | null
           id?: string
-          location?: string | null
+          is_recurring?: boolean
+          location_address?: string | null
+          location_type?:
+            | Database["public"]["Enums"]["event_location_type"]
+            | null
+          location_url?: string | null
           meeting_url?: string | null
+          parent_event_id?: string | null
+          recurrence_day_of_week?: number | null
+          recurrence_end_date?: string | null
+          recurrence_end_type?:
+            | Database["public"]["Enums"]["event_recurrence_end_type"]
+            | null
+          recurrence_occurrences?: number | null
+          recurrence_pattern?:
+            | Database["public"]["Enums"]["event_recurrence_pattern"]
+            | null
+          skool_call_id?: string | null
           start_at: string
+          start_date: string
+          start_time: string
+          status?: Database["public"]["Enums"]["event_status"]
+          timezone?: string
           title: string
           updated_at?: string | null
         }
         Update: {
+          attendee_count?: number
+          community_id?: string | null
           cover_image_url?: string | null
           created_at?: string | null
-          created_by?: string | null
+          creator_id?: string | null
           description?: string | null
+          duration_minutes?: number
           end_at?: string | null
           event_type?: string | null
           id?: string
-          location?: string | null
+          is_recurring?: boolean
+          location_address?: string | null
+          location_type?:
+            | Database["public"]["Enums"]["event_location_type"]
+            | null
+          location_url?: string | null
           meeting_url?: string | null
+          parent_event_id?: string | null
+          recurrence_day_of_week?: number | null
+          recurrence_end_date?: string | null
+          recurrence_end_type?:
+            | Database["public"]["Enums"]["event_recurrence_end_type"]
+            | null
+          recurrence_occurrences?: number | null
+          recurrence_pattern?:
+            | Database["public"]["Enums"]["event_recurrence_pattern"]
+            | null
+          skool_call_id?: string | null
           start_at?: string
+          start_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          timezone?: string
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       membership_answers: {
         Row: {
@@ -1650,7 +1794,145 @@ export type Database = {
     }
     Functions: {
       generate_order_code: { Args: never; Returns: string }
+      generate_recurring_events: {
+        Args: { count_to_generate?: number; parent_id: string }
+        Returns: {
+          attendee_count: number
+          community_id: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          creator_id: string | null
+          description: string | null
+          duration_minutes: number
+          end_at: string | null
+          event_type: string | null
+          id: string
+          is_recurring: boolean
+          location_address: string | null
+          location_type:
+            | Database["public"]["Enums"]["event_location_type"]
+            | null
+          location_url: string | null
+          meeting_url: string | null
+          parent_event_id: string | null
+          recurrence_day_of_week: number | null
+          recurrence_end_date: string | null
+          recurrence_end_type:
+            | Database["public"]["Enums"]["event_recurrence_end_type"]
+            | null
+          recurrence_occurrences: number | null
+          recurrence_pattern:
+            | Database["public"]["Enums"]["event_recurrence_pattern"]
+            | null
+          skool_call_id: string | null
+          start_at: string
+          start_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["event_status"]
+          timezone: string
+          title: string
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       generate_referral_code: { Args: never; Returns: string }
+      get_live_events: {
+        Args: never
+        Returns: {
+          attendee_count: number
+          community_id: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          creator_id: string | null
+          description: string | null
+          duration_minutes: number
+          end_at: string | null
+          event_type: string | null
+          id: string
+          is_recurring: boolean
+          location_address: string | null
+          location_type:
+            | Database["public"]["Enums"]["event_location_type"]
+            | null
+          location_url: string | null
+          meeting_url: string | null
+          parent_event_id: string | null
+          recurrence_day_of_week: number | null
+          recurrence_end_date: string | null
+          recurrence_end_type:
+            | Database["public"]["Enums"]["event_recurrence_end_type"]
+            | null
+          recurrence_occurrences: number | null
+          recurrence_pattern:
+            | Database["public"]["Enums"]["event_recurrence_pattern"]
+            | null
+          skool_call_id: string | null
+          start_at: string
+          start_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["event_status"]
+          timezone: string
+          title: string
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_upcoming_events: {
+        Args: { limit_count?: number }
+        Returns: {
+          attendee_count: number
+          community_id: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          creator_id: string | null
+          description: string | null
+          duration_minutes: number
+          end_at: string | null
+          event_type: string | null
+          id: string
+          is_recurring: boolean
+          location_address: string | null
+          location_type:
+            | Database["public"]["Enums"]["event_location_type"]
+            | null
+          location_url: string | null
+          meeting_url: string | null
+          parent_event_id: string | null
+          recurrence_day_of_week: number | null
+          recurrence_end_date: string | null
+          recurrence_end_type:
+            | Database["public"]["Enums"]["event_recurrence_end_type"]
+            | null
+          recurrence_occurrences: number | null
+          recurrence_pattern:
+            | Database["public"]["Enums"]["event_recurrence_pattern"]
+            | null
+          skool_call_id: string | null
+          start_at: string
+          start_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["event_status"]
+          timezone: string
+          title: string
+          updated_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1666,6 +1948,18 @@ export type Database = {
     Enums: {
       app_role: "owner" | "admin" | "moderator" | "paid_member" | "free_member"
       category_sort: "default" | "new" | "top_week" | "top_month"
+      event_location_type:
+        | "skool_call"
+        | "skool_webinar"
+        | "zoom"
+        | "google_meet"
+        | "in_person"
+        | "other"
+      event_recurrence_end_type: "never" | "on_date" | "after_occurrences"
+      event_recurrence_pattern: "daily" | "weekly" | "monthly" | "yearly"
+      event_reminder_type: "24h" | "1h" | "15m"
+      event_rsvp_status: "going" | "maybe" | "not_going"
+      event_status: "scheduled" | "live" | "ended" | "cancelled"
       lesson_access_level: "public" | "member" | "level"
       media_type: "image" | "video" | "gif" | "link"
       membership_status: "pending" | "approved" | "declined"
@@ -1813,6 +2107,19 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "admin", "moderator", "paid_member", "free_member"],
       category_sort: ["default", "new", "top_week", "top_month"],
+      event_location_type: [
+        "skool_call",
+        "skool_webinar",
+        "zoom",
+        "google_meet",
+        "in_person",
+        "other",
+      ],
+      event_recurrence_end_type: ["never", "on_date", "after_occurrences"],
+      event_recurrence_pattern: ["daily", "weekly", "monthly", "yearly"],
+      event_reminder_type: ["24h", "1h", "15m"],
+      event_rsvp_status: ["going", "maybe", "not_going"],
+      event_status: ["scheduled", "live", "ended", "cancelled"],
       lesson_access_level: ["public", "member", "level"],
       media_type: ["image", "video", "gif", "link"],
       membership_status: ["pending", "approved", "declined"],
