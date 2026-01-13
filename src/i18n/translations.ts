@@ -419,6 +419,37 @@ interface ErrorTranslations {
   sessionExpired: string;
 }
 
+interface PaymentMethodsTranslations {
+  title: string;
+  cardsSection: string;
+  bankAccountsSection: string;
+  addCard: string;
+  addAccount: string;
+  addCardTitle: string;
+  addAccountTitle: string;
+  editAccountTitle: string;
+  noCards: string;
+  noAccounts: string;
+  default: string;
+  setDefault: string;
+  delete: string;
+  selectBank: string;
+  selectBankPlaceholder: string;
+  cardNumber: string;
+  cardName: string;
+  expiry: string;
+  cvv: string;
+  accountNumber: string;
+  accountName: string;
+  branch: string;
+  optional: string;
+  cardAdded: string;
+  accountAdded: string;
+  accountUpdated: string;
+  defaultSet: string;
+  deleted: string;
+}
+
 export interface TranslationKeys {
   nav: NavTranslations;
   auth: AuthTranslations;
@@ -438,6 +469,7 @@ export interface TranslationKeys {
   messenger: MessengerTranslations;
   status: StatusTranslations;
   errors: ErrorTranslations;
+  paymentMethods: PaymentMethodsTranslations;
 }
 
 export const translations: Record<'vi' | 'en', TranslationKeys> = {
@@ -843,6 +875,36 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       tryAgain: 'Vui lòng thử lại',
       sessionExpired: 'Phiên đăng nhập đã hết hạn',
     },
+    paymentMethods: {
+      title: 'Phương thức thanh toán',
+      cardsSection: 'THẺ NGÂN HÀNG',
+      bankAccountsSection: 'TÀI KHOẢN NGÂN HÀNG (Nhận tiền Affiliate)',
+      addCard: 'Thêm thẻ mới',
+      addAccount: 'Thêm tài khoản',
+      addCardTitle: 'Thêm thẻ ngân hàng',
+      addAccountTitle: 'Thêm tài khoản ngân hàng',
+      editAccountTitle: 'Sửa tài khoản ngân hàng',
+      noCards: 'Chưa có thẻ ngân hàng nào',
+      noAccounts: 'Chưa có tài khoản ngân hàng nào',
+      default: 'Mặc định',
+      setDefault: 'Đặt mặc định',
+      delete: 'Xóa',
+      selectBank: 'Chọn ngân hàng',
+      selectBankPlaceholder: 'Chọn ngân hàng...',
+      cardNumber: 'Số thẻ',
+      cardName: 'Tên trên thẻ',
+      expiry: 'Ngày hết hạn',
+      cvv: 'CVV',
+      accountNumber: 'Số tài khoản',
+      accountName: 'Tên chủ tài khoản',
+      branch: 'Chi nhánh',
+      optional: 'không bắt buộc',
+      cardAdded: 'Đã thêm thẻ thành công',
+      accountAdded: 'Đã thêm tài khoản thành công',
+      accountUpdated: 'Đã cập nhật tài khoản thành công',
+      defaultSet: 'Đã đặt làm mặc định',
+      deleted: 'Đã xóa thành công',
+    },
   },
   en: {
     nav: {
@@ -1245,6 +1307,36 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       somethingWentWrong: 'Something went wrong',
       tryAgain: 'Please try again',
       sessionExpired: 'Session expired',
+    },
+    paymentMethods: {
+      title: 'Payment Methods',
+      cardsSection: 'BANK CARDS',
+      bankAccountsSection: 'BANK ACCOUNTS (For Affiliate Payouts)',
+      addCard: 'Add Card',
+      addAccount: 'Add Account',
+      addCardTitle: 'Add Bank Card',
+      addAccountTitle: 'Add Bank Account',
+      editAccountTitle: 'Edit Bank Account',
+      noCards: 'No bank cards added yet',
+      noAccounts: 'No bank accounts added yet',
+      default: 'Default',
+      setDefault: 'Set as Default',
+      delete: 'Delete',
+      selectBank: 'Select Bank',
+      selectBankPlaceholder: 'Select a bank...',
+      cardNumber: 'Card Number',
+      cardName: 'Name on Card',
+      expiry: 'Expiry Date',
+      cvv: 'CVV',
+      accountNumber: 'Account Number',
+      accountName: 'Account Holder Name',
+      branch: 'Branch',
+      optional: 'optional',
+      cardAdded: 'Card added successfully',
+      accountAdded: 'Account added successfully',
+      accountUpdated: 'Account updated successfully',
+      defaultSet: 'Set as default successfully',
+      deleted: 'Deleted successfully',
     },
   },
 };
