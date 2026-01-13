@@ -1075,6 +1075,56 @@ export type Database = {
           },
         ]
       }
+      location_settings: {
+        Row: {
+          allow_nearby_search: boolean
+          community_id: string | null
+          created_at: string
+          default_center_lat: number | null
+          default_center_lng: number | null
+          default_zoom: number
+          id: string
+          map_enabled: boolean
+          nearby_radius_options: Json
+          show_member_count: boolean
+          updated_at: string
+        }
+        Insert: {
+          allow_nearby_search?: boolean
+          community_id?: string | null
+          created_at?: string
+          default_center_lat?: number | null
+          default_center_lng?: number | null
+          default_zoom?: number
+          id?: string
+          map_enabled?: boolean
+          nearby_radius_options?: Json
+          show_member_count?: boolean
+          updated_at?: string
+        }
+        Update: {
+          allow_nearby_search?: boolean
+          community_id?: string | null
+          created_at?: string
+          default_center_lat?: number | null
+          default_center_lng?: number | null
+          default_zoom?: number
+          id?: string
+          map_enabled?: boolean
+          nearby_radius_options?: Json
+          show_member_count?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_settings_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: true
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_answers: {
         Row: {
           answer_text: string
@@ -2038,6 +2088,68 @@ export type Database = {
         }
         Relationships: []
       }
+      user_locations: {
+        Row: {
+          city: string | null
+          community_id: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          is_visible: boolean
+          last_updated_at: string
+          latitude: number | null
+          location_source: Database["public"]["Enums"]["location_source"]
+          longitude: number | null
+          privacy_noise_applied: boolean
+          region: string | null
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          community_id?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_visible?: boolean
+          last_updated_at?: string
+          latitude?: number | null
+          location_source?: Database["public"]["Enums"]["location_source"]
+          longitude?: number | null
+          privacy_noise_applied?: boolean
+          region?: string | null
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          community_id?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_visible?: boolean
+          last_updated_at?: string
+          latitude?: number | null
+          location_source?: Database["public"]["Enums"]["location_source"]
+          longitude?: number | null
+          privacy_noise_applied?: boolean
+          region?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_locations_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_payment_methods: {
         Row: {
           account_holder_name: string | null
@@ -2289,6 +2401,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_location_noise: {
+        Args: { lat: number; lng: number; noise_km?: number }
+        Returns: {
+          noisy_lat: number
+          noisy_lng: number
+        }[]
+      }
       add_point: {
         Args: {
           p_community_id: string
@@ -2423,6 +2542,22 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_nearby_members: {
+        Args: {
+          community_uuid: string
+          limit_count?: number
+          radius_km: number
+          user_lat: number
+          user_lng: number
+        }
+        Returns: {
+          display_name: string
+          distance_km: number
+          latitude: number
+          longitude: number
+          user_id: string
+        }[]
+      }
       get_online_members_count: {
         Args: { p_community_id: string }
         Returns: number
@@ -2531,6 +2666,7 @@ export type Database = {
       event_rsvp_status: "going" | "maybe" | "not_going"
       event_status: "scheduled" | "live" | "ended" | "cancelled"
       lesson_access_level: "public" | "member" | "level"
+      location_source: "auto_ip" | "manual" | "gps"
       media_type: "image" | "video" | "gif" | "link"
       member_status: "active" | "muted" | "banned"
       membership_status: "pending" | "approved" | "declined"
@@ -2711,6 +2847,7 @@ export const Constants = {
       event_rsvp_status: ["going", "maybe", "not_going"],
       event_status: ["scheduled", "live", "ended", "cancelled"],
       lesson_access_level: ["public", "member", "level"],
+      location_source: ["auto_ip", "manual", "gps"],
       media_type: ["image", "video", "gif", "link"],
       member_status: ["active", "muted", "banned"],
       membership_status: ["pending", "approved", "declined"],
