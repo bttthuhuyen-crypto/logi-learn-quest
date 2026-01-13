@@ -146,6 +146,48 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          created_at: string
+          default_sort: Database["public"]["Enums"]["category_sort"]
+          description: string | null
+          emoji: string | null
+          id: string
+          name: string
+          order_index: number
+          post_count: number
+          post_permission: Database["public"]["Enums"]["post_permission"]
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_sort?: Database["public"]["Enums"]["category_sort"]
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          name: string
+          order_index?: number
+          post_count?: number
+          post_permission?: Database["public"]["Enums"]["post_permission"]
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_sort?: Database["public"]["Enums"]["category_sort"]
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          name?: string
+          order_index?: number
+          post_count?: number
+          post_permission?: Database["public"]["Enums"]["post_permission"]
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_settings: {
         Row: {
           created_at: string
@@ -169,6 +211,83 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          like_count: number
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          like_count?: number
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          like_count?: number
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       community_settings: {
         Row: {
@@ -817,6 +936,273 @@ export type Database = {
         }
         Relationships: []
       }
+      poll_options: {
+        Row: {
+          created_at: string
+          id: string
+          option_text: string
+          order_index: number
+          poll_id: string
+          vote_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_text: string
+          order_index?: number
+          poll_id: string
+          vote_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_text?: string
+          order_index?: number
+          poll_id?: string
+          vote_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          is_multiple_choice: boolean
+          post_id: string
+          question: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_multiple_choice?: boolean
+          post_id: string
+          question: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_multiple_choice?: boolean
+          post_id?: string
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_follows: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_follows_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_type: Database["public"]["Enums"]["media_type"]
+          media_url: string
+          order_index: number
+          post_id: string
+          thumbnail_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_type: Database["public"]["Enums"]["media_type"]
+          media_url: string
+          order_index?: number
+          post_id: string
+          thumbnail_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_type?: Database["public"]["Enums"]["media_type"]
+          media_url?: string
+          order_index?: number
+          post_id?: string
+          thumbnail_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          action_completed_count: number
+          author_id: string
+          category_id: string
+          comment_count: number
+          content: string | null
+          content_type: Database["public"]["Enums"]["post_content_type"]
+          created_at: string
+          id: string
+          is_action_post: boolean
+          is_pinned: boolean
+          last_activity_at: string
+          like_count: number
+          pinned_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_completed_count?: number
+          author_id: string
+          category_id: string
+          comment_count?: number
+          content?: string | null
+          content_type?: Database["public"]["Enums"]["post_content_type"]
+          created_at?: string
+          id?: string
+          is_action_post?: boolean
+          is_pinned?: boolean
+          last_activity_at?: string
+          like_count?: number
+          pinned_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_completed_count?: number
+          author_id?: string
+          category_id?: string
+          comment_count?: number
+          content?: string | null
+          content_type?: Database["public"]["Enums"]["post_content_type"]
+          created_at?: string
+          id?: string
+          is_action_post?: boolean
+          is_pinned?: boolean
+          last_activity_at?: string
+          like_count?: number
+          pinned_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1190,10 +1576,14 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "moderator" | "paid_member" | "free_member"
+      category_sort: "default" | "new" | "top_week" | "top_month"
       lesson_access_level: "public" | "member" | "level"
+      media_type: "image" | "video" | "gif" | "link"
       membership_status: "pending" | "approved" | "declined"
       message_type: "text" | "image" | "file"
       payout_status: "pending" | "processing" | "completed" | "rejected"
+      post_content_type: "text" | "poll"
+      post_permission: "all" | "admin_only"
       presence_status: "online" | "away" | "offline"
       question_type: "text" | "multiple_choice" | "email"
       referral_status: "pending" | "confirmed" | "paid" | "reversed"
@@ -1333,10 +1723,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "moderator", "paid_member", "free_member"],
+      category_sort: ["default", "new", "top_week", "top_month"],
       lesson_access_level: ["public", "member", "level"],
+      media_type: ["image", "video", "gif", "link"],
       membership_status: ["pending", "approved", "declined"],
       message_type: ["text", "image", "file"],
       payout_status: ["pending", "processing", "completed", "rejected"],
+      post_content_type: ["text", "poll"],
+      post_permission: ["all", "admin_only"],
       presence_status: ["online", "away", "offline"],
       question_type: ["text", "multiple_choice", "email"],
       referral_status: ["pending", "confirmed", "paid", "reversed"],
