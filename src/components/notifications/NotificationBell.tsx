@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Bell, Check, CheckCheck, Trash2, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Check, CheckCheck, Trash2, X, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -109,6 +110,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onDelete, language }: No
 
 export const NotificationBell = () => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const { language } = useLanguage();
   const {
     notifications,
@@ -138,17 +140,30 @@ export const NotificationBell = () => {
           <h4 className="font-semibold text-sm">
             {language === 'vi' ? 'Thông báo' : 'Notifications'}
           </h4>
-          {unreadCount > 0 && (
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
-              size="sm"
-              className="h-7 text-xs gap-1"
-              onClick={() => markAllAsRead()}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => {
+                setOpen(false);
+                navigate('/settings/notifications');
+              }}
             >
-              <CheckCheck className="h-3.5 w-3.5" />
-              {language === 'vi' ? 'Đánh dấu đã đọc' : 'Mark all read'}
+              <Settings className="h-3.5 w-3.5" />
             </Button>
-          )}
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => markAllAsRead()}
+              >
+                <CheckCheck className="h-3.5 w-3.5" />
+                {language === 'vi' ? 'Đọc tất cả' : 'Read all'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Notifications list */}

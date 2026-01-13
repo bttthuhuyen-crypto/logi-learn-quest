@@ -18,6 +18,7 @@ import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import Profile from "./pages/Profile";
+import NotificationSettings from "./pages/NotificationSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/affiliate" element={<AffiliateDashboard />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/settings/notifications" element={<NotificationSettings />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
