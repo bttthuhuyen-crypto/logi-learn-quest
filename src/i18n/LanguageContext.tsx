@@ -190,10 +190,30 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useLanguage = () => {
+export const useLanguage = (): LanguageContextType => {
   const context = useContext(LanguageContext);
+  
+  // Be resilient to transient missing provider states (e.g. Fast Refresh / HMR)
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    if (import.meta.env.DEV) {
+      console.warn('[i18n] LanguageProvider is not mounted yet. Returning a safe fallback context.');
+    }
+    
+    // Return fallback with Vietnamese defaults
+    const fallbackT = translations['vi'];
+    return {
+      language: 'vi',
+      setLanguage: () => {},
+      t: fallbackT,
+      formatCurrency: (amount: number) => `${amount.toLocaleString('vi-VN')}đ`,
+      formatNumber: (num: number) => num.toLocaleString('vi-VN'),
+      formatDate: (date: Date | string) => new Date(date).toLocaleDateString('vi-VN'),
+      formatDateTime: (date: Date | string) => new Date(date).toLocaleString('vi-VN'),
+      formatRelativeDate: (date: Date | string) => new Date(date).toLocaleDateString('vi-VN'),
+      interpolate: (template: string, values: Record<string, string | number>) => 
+        template.replace(/{(\w+)}/g, (_, key) => String(values[key] ?? '')),
+    };
   }
+  
   return context;
 };
