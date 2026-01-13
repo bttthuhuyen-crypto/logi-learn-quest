@@ -17,6 +17,7 @@ import Members from "./pages/Members";
 import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/about" element={<About />} />
               <Route path="/affiliate" element={<AffiliateDashboard />} />
+              <Route path="/profile" element={<Profile />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
