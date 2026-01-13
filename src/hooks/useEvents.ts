@@ -216,13 +216,25 @@ export const usePastEvents = () => {
   });
 };
 
-// Fetch events for a specific month
+// Fetch events for a specific month (includes visible grid range)
 export const useMonthEvents = (year: number, month: number) => {
   return useQuery({
     queryKey: ['events', 'month', year, month],
     queryFn: async () => {
-      const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-      const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+      // Calculate the full grid range (from start of first week to end of last week)
+      const monthStart = new Date(year, month, 1);
+      const monthEnd = new Date(year, month + 1, 0);
+      
+      // Get the Sunday of the week containing the first day of the month
+      const gridStart = new Date(monthStart);
+      gridStart.setDate(monthStart.getDate() - monthStart.getDay());
+      
+      // Get the Saturday of the week containing the last day of the month
+      const gridEnd = new Date(monthEnd);
+      gridEnd.setDate(monthEnd.getDate() + (6 - monthEnd.getDay()));
+
+      const startDate = format(gridStart, 'yyyy-MM-dd');
+      const endDate = format(gridEnd, 'yyyy-MM-dd');
 
       const { data, error } = await supabase
         .from('events')
