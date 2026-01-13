@@ -18,11 +18,13 @@ import { MessageBubble } from './MessageBubble';
 import { ChatLockedOverlay } from './ChatLockedOverlay';
 import { BlockUserDialog } from './BlockUserDialog';
 import { ReportUserModal } from './ReportUserModal';
+import { OnlineStatusIndicator } from './OnlineStatusIndicator';
 import { ConversationWithDetails } from '@/hooks/useConversations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useChatUnlock } from '@/hooks/useChatUnlock';
 import { useBlockUser } from '@/hooks/useBlockUser';
+import { useUsersPresence } from '@/hooks/useUserPresence';
 import { useNavigate } from 'react-router-dom';
 
 interface ChatWindowProps {
@@ -58,6 +60,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const otherUserId = conversation?.otherParticipant?.user_id || '';
   const otherUserName = conversation?.otherParticipant?.full_name || 'Người dùng';
   const isBlocked = otherUserId ? isUserBlocked(otherUserId) : false;
+  
+  // Get presence status
+  const { getPresence } = useUsersPresence(otherUserId ? [otherUserId] : []);
+  const otherUserPresence = otherUserId ? getPresence(otherUserId) : { isOnline: false, status: 'offline' as const, lastSeen: null };
 
   // Mark as read when viewing conversation
   useEffect(() => {
@@ -177,16 +183,29 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={conversation.otherParticipant?.avatar_url || ''} />
-          <AvatarFallback>
-            {getInitials(conversation.otherParticipant?.full_name)}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={conversation.otherParticipant?.avatar_url || ''} />
+            <AvatarFallback>
+              {getInitials(conversation.otherParticipant?.full_name)}
+            </AvatarFallback>
+          </Avatar>
+          <OnlineStatusIndicator 
+            isOnline={otherUserPresence.isOnline}
+            size="sm"
+            className="absolute bottom-0 right-0"
+          />
+        </div>
         <div className="flex-1">
           <h3 className="font-semibold">
             {conversation.otherParticipant?.full_name || 'Người dùng'}
           </h3>
+          <p className="text-xs text-muted-foreground">
+            {otherUserPresence.isOnline 
+              ? (language === 'vi' ? 'Đang hoạt động' : 'Online')
+              : (language === 'vi' ? 'Ngoại tuyến' : 'Offline')
+            }
+          </p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

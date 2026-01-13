@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Search, Plus, Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { ConversationWithDetails } from '@/hooks/useConversations';
 import { formatDistanceToNow } from 'date-fns';
 import { vi, enUS } from 'date-fns/locale';
 import { useChatUnlock } from '@/hooks/useChatUnlock';
+import { useUsersPresence } from '@/hooks/useUserPresence';
+import { OnlineStatusIndicator } from './OnlineStatusIndicator';
 
 interface ConversationListProps {
   conversations: ConversationWithDetails[];
@@ -33,6 +35,15 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = React.useState('');
   const { canChat, requiredLevel } = useChatUnlock();
+
+  // Get user IDs for presence tracking
+  const userIds = useMemo(() => 
+    conversations
+      .map(c => c.otherParticipant?.user_id)
+      .filter((id): id is string => !!id),
+    [conversations]
+  );
+  const { getPresence } = useUsersPresence(userIds);
 
   const filteredConversations = conversations.filter(conv => 
     conv.otherParticipant?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -143,12 +154,21 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     : 'hover:bg-muted'
                 }`}
               >
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={conv.otherParticipant?.avatar_url || ''} />
-                  <AvatarFallback>
-                    {getInitials(conv.otherParticipant?.full_name)}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={conv.otherParticipant?.avatar_url || ''} />
+                    <AvatarFallback>
+                      {getInitials(conv.otherParticipant?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {conv.otherParticipant?.user_id && (
+                    <OnlineStatusIndicator 
+                      isOnline={getPresence(conv.otherParticipant.user_id).isOnline}
+                      size="md"
+                      className="absolute bottom-0 right-0"
+                    />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className={`font-medium truncate ${conv.unreadCount > 0 ? 'text-foreground' : ''}`}>
