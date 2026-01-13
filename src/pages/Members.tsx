@@ -1,13 +1,13 @@
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { Users, Search, UserCircle } from 'lucide-react';
+import { Users, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
 const Members = () => {
-  const { language } = useLanguage();
+  const { t } = useLanguage();
 
   const sampleMembers = [
     { name: 'Nguyễn Văn A', level: 5, online: true },
@@ -23,18 +23,14 @@ const Members = () => {
           <div className="flex items-center gap-3">
             <Users className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold">
-                {language === 'vi' ? 'Thành viên' : 'Members'}
-              </h1>
-              <p className="text-muted-foreground">
-                {language === 'vi' ? '4 thành viên' : '4 members'}
-              </p>
+              <h1 className="text-2xl font-bold">{t.members.title}</h1>
+              <p className="text-muted-foreground">4 {t.members.memberCount}</p>
             </div>
           </div>
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder={language === 'vi' ? 'Tìm kiếm...' : 'Search...'} 
+              placeholder={t.members.searchPlaceholder} 
               className="pl-10" 
             />
           </div>
@@ -55,7 +51,7 @@ const Members = () => {
                 <div className="flex-1">
                   <p className="font-medium">{member.name}</p>
                   <Badge variant="outline" className="text-xs">
-                    Level {member.level}
+                    {t.common.level} {member.level}
                   </Badge>
                 </div>
               </div>

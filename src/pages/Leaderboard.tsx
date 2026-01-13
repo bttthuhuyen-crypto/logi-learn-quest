@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Leaderboard = () => {
-  const { language } = useLanguage();
+  const { t, formatNumber } = useLanguage();
 
   const leaders = [
     { name: 'Nguyễn Văn A', points: 2500, level: 7 },
@@ -31,20 +31,16 @@ const Leaderboard = () => {
         <div className="flex items-center gap-3 mb-8">
           <Trophy className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">
-              {language === 'vi' ? 'Bảng xếp hạng' : 'Leaderboard'}
-            </h1>
-            <p className="text-muted-foreground">
-              {language === 'vi' ? 'Thành viên tích cực nhất' : 'Most active members'}
-            </p>
+            <h1 className="text-2xl font-bold">{t.leaderboard.title}</h1>
+            <p className="text-muted-foreground">{t.leaderboard.subtitle}</p>
           </div>
         </div>
 
         <Tabs defaultValue="week">
           <TabsList className="mb-6">
-            <TabsTrigger value="week">{language === 'vi' ? '7 ngày' : '7 days'}</TabsTrigger>
-            <TabsTrigger value="month">{language === 'vi' ? '30 ngày' : '30 days'}</TabsTrigger>
-            <TabsTrigger value="all">{language === 'vi' ? 'Tất cả' : 'All time'}</TabsTrigger>
+            <TabsTrigger value="week">{t.leaderboard.last7Days}</TabsTrigger>
+            <TabsTrigger value="month">{t.leaderboard.last30Days}</TabsTrigger>
+            <TabsTrigger value="all">{t.leaderboard.allTime}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="week" className="space-y-3">
@@ -63,13 +59,13 @@ const Leaderboard = () => {
                 </Avatar>
                 <div className="flex-1">
                   <p className="font-medium">{leader.name}</p>
-                  <p className="text-sm text-muted-foreground">Level {leader.level}</p>
+                  <p className="text-sm text-muted-foreground">{t.common.level} {leader.level}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-primary">{leader.points.toLocaleString()}</p>
+                  <p className="font-semibold text-primary">{formatNumber(leader.points)}</p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    {language === 'vi' ? 'điểm' : 'points'}
+                    {t.common.points}
                   </p>
                 </div>
               </div>
@@ -78,13 +74,13 @@ const Leaderboard = () => {
 
           <TabsContent value="month">
             <p className="text-center text-muted-foreground py-8">
-              {language === 'vi' ? 'Dữ liệu 30 ngày' : '30 days data'}
+              {t.leaderboard.data30Days}
             </p>
           </TabsContent>
 
           <TabsContent value="all">
             <p className="text-center text-muted-foreground py-8">
-              {language === 'vi' ? 'Tổng điểm tất cả thời gian' : 'All time points'}
+              {t.leaderboard.dataAllTime}
             </p>
           </TabsContent>
         </Tabs>
