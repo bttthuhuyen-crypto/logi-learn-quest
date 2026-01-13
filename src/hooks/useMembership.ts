@@ -221,6 +221,12 @@ export const useAdminMembership = () => {
   };
 
   const updateRequestStatus = async (requestId: string, status: 'approved' | 'declined', reviewerId: string) => {
+    // Get the request to find user_id
+    const request = requests.find(r => r.id === requestId);
+    if (!request) {
+      return { error: new Error('Request not found') };
+    }
+
     const { error } = await supabase
       .from('membership_requests')
       .update({
@@ -230,11 +236,48 @@ export const useAdminMembership = () => {
       })
       .eq('id', requestId);
 
-    if (!error) {
-      await fetchRequests();
+    if (error) {
+      return { error };
     }
 
-    return { error };
+    // Send notifications based on status
+    if (status === 'approved') {
+      // Call auto-dm-on-approval edge function
+      try {
+        await supabase.functions.invoke('auto-dm-on-approval', {
+          body: { 
+            user_id: request.user_id, 
+            user_name: request.profile?.full_name || 'Thành viên'
+          }
+        });
+      } catch (dmError) {
+        console.error('Error sending auto DM:', dmError);
+        // Don't fail the whole operation if DM fails
+      }
+
+      // Create membership_approved notification
+      await supabase.from('notifications').insert([{
+        user_id: request.user_id,
+        type: 'membership_approved',
+        title: 'Yêu cầu tham gia đã được duyệt',
+        message: 'Chào mừng! Bạn đã được chấp nhận vào cộng đồng.',
+        actor_id: reviewerId,
+        is_read: false,
+      }]);
+    } else if (status === 'declined') {
+      // Create membership_declined notification
+      await supabase.from('notifications').insert([{
+        user_id: request.user_id,
+        type: 'membership_declined',
+        title: 'Yêu cầu tham gia bị từ chối',
+        message: 'Rất tiếc, yêu cầu tham gia của bạn đã bị từ chối.',
+        actor_id: reviewerId,
+        is_read: false,
+      }]);
+    }
+
+    await fetchRequests();
+    return { error: null };
   };
 
   useEffect(() => {
