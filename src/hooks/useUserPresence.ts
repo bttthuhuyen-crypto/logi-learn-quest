@@ -140,8 +140,10 @@ export const useUserPresence = () => {
   };
 };
 
-// Hook to get presence status of specific users
+// Hook to get presence status of specific users with realtime updates
 export const useUsersPresence = (userIds: string[]) => {
+  const queryClient = useQueryClient();
+  
   const { data: presenceData = [], isLoading } = useQuery({
     queryKey: ['users-presence', userIds.sort().join(',')],
     queryFn: async () => {
@@ -158,6 +160,35 @@ export const useUsersPresence = (userIds: string[]) => {
     enabled: userIds.length > 0,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  // Subscribe to realtime presence changes
+  useEffect(() => {
+    if (userIds.length === 0) return;
+
+    const channel = supabase
+      .channel(`users-presence-${userIds.slice(0, 5).join('-')}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_presence',
+        },
+        (payload) => {
+          const changedUserId = (payload.new as any)?.user_id || (payload.old as any)?.user_id;
+          if (userIds.includes(changedUserId)) {
+            queryClient.invalidateQueries({ 
+              queryKey: ['users-presence', userIds.sort().join(',')] 
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userIds.sort().join(','), queryClient]);
 
   const getPresence = useCallback((userId: string): { isOnline: boolean; status: PresenceStatus; lastSeen: string | null } => {
     const presence = presenceData.find(p => p.user_id === userId);

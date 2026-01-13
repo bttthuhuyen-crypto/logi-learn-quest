@@ -533,6 +533,19 @@ interface FollowTranslations {
   sortTopMonth: string;
 }
 
+interface PresenceTranslations {
+  online: string;
+  away: string;
+  offline: string;
+  onlineCount: string;
+}
+
+interface SettingsTranslations {
+  privacy: string;
+  showOnlineStatus: string;
+  showOnlineStatusHint: string;
+}
+
 export interface TranslationKeys {
   nav: NavTranslations;
   auth: AuthTranslations;
@@ -555,6 +568,8 @@ export interface TranslationKeys {
   paymentMethods: PaymentMethodsTranslations;
   memberProfile: MemberProfileTranslations;
   follow: FollowTranslations;
+  presence: PresenceTranslations;
+  settings: SettingsTranslations;
 }
 
 export const translations: Record<'vi' | 'en', TranslationKeys> = {
@@ -1071,6 +1086,17 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       sortTopWeek: 'Top tuần',
       sortTopMonth: 'Top tháng',
     },
+    presence: {
+      online: 'Đang online',
+      away: 'Vắng mặt',
+      offline: 'Ngoại tuyến',
+      onlineCount: '{count} đang online',
+    },
+    settings: {
+      privacy: 'Quyền riêng tư',
+      showOnlineStatus: 'Hiển thị trạng thái online',
+      showOnlineStatusHint: 'Khi tắt, người khác sẽ không thấy bạn đang online',
+    },
   },
   en: {
     nav: {
@@ -1584,6 +1610,17 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       sortNew: 'Newest',
       sortTopWeek: 'Top week',
       sortTopMonth: 'Top month',
+    },
+    presence: {
+      online: 'Online',
+      away: 'Away',
+      offline: 'Offline',
+      onlineCount: '{count} online',
+    },
+    settings: {
+      privacy: 'Privacy',
+      showOnlineStatus: 'Show online status',
+      showOnlineStatusHint: 'When off, others won\'t see when you\'re online',
     },
   },
 };

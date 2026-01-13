@@ -1,7 +1,5 @@
 import { ReactNode } from 'react';
 import { Header } from './Header';
-import { useUserPresence } from '@/hooks/useUserPresence';
-import { useAuth } from '@/contexts/AuthContext';
 
 export interface MainLayoutProps {
   children: ReactNode;
@@ -9,10 +7,7 @@ export interface MainLayoutProps {
 }
 
 export const MainLayout = ({ children, hideHeader = false }: MainLayoutProps) => {
-  const { user } = useAuth();
-  
-  // Track user presence when logged in
-  useUserPresence();
+  // Presence is now tracked by PresenceProvider in App.tsx
 
   return (
     <div className="min-h-screen bg-background">

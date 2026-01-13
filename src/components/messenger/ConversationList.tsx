@@ -13,7 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { vi, enUS } from 'date-fns/locale';
 import { useChatUnlock } from '@/hooks/useChatUnlock';
 import { useUsersPresence } from '@/hooks/useUserPresence';
-import { OnlineStatusIndicator } from './OnlineStatusIndicator';
+import { StatusIndicator } from '@/components/members/StatusIndicator';
 
 interface ConversationListProps {
   conversations: ConversationWithDetails[];
@@ -162,8 +162,8 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   {conv.otherParticipant?.user_id && (
-                    <OnlineStatusIndicator 
-                      isOnline={getPresence(conv.otherParticipant.user_id).isOnline}
+                    <StatusIndicator 
+                      status={getPresence(conv.otherParticipant.user_id).status}
                       size="md"
                       className="absolute bottom-0 right-0"
                     />
