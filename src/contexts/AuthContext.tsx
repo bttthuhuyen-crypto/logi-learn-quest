@@ -49,6 +49,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Debug logging
+        console.log('[Auth State] Event:', event);
+        console.log('[Auth State] Session:', session ? 'exists' : 'null');
+        console.log('[Auth State] User:', session?.user?.email ?? 'none');
+
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -104,12 +109,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    // Debug logging
+    console.log('[Auth Debug] Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+    console.log('[Auth Debug] Redirect URL:', `${window.location.origin}/`);
+    console.log('[Auth Debug] Starting Google OAuth...');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/`,
       },
     });
+
+    if (error) {
+      console.error('[Auth Debug] Google OAuth Error:', error);
+    } else {
+      console.log('[Auth Debug] Google OAuth initiated:', data);
+    }
 
     return { error: error as Error | null };
   };

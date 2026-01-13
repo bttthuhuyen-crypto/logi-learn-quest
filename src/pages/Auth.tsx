@@ -94,11 +94,15 @@ const Auth = () => {
   };
 
   const handleGoogleLogin = async () => {
+    console.log('[Auth Page] Google login button clicked');
+    console.log('[Auth Page] Current origin:', window.location.origin);
+    
     setLoading(true);
     const { error } = await signInWithGoogle();
     setLoading(false);
 
     if (error) {
+      console.error('[Auth Page] Google login failed:', error.message);
       toast({
         variant: 'destructive',
         title: 'Error',
