@@ -36,13 +36,13 @@ interface CourseSidebarProps {
   sections: CourseSection[];
   selectedLesson: CourseLesson | null;
   onSelectLesson: (lesson: CourseLesson) => void;
-  onUpdateCourse: (updates: Partial<Course>) => Promise<void>;
-  onCreateSection: (title: string) => Promise<void>;
-  onUpdateSection: (sectionId: string, updates: Partial<CourseSection>) => Promise<void>;
-  onDeleteSection: (sectionId: string) => Promise<void>;
-  onCreateLesson: (sectionId: string, lesson: Partial<CourseLesson>) => Promise<void>;
-  onUpdateLesson: (lessonId: string, updates: Partial<CourseLesson>) => Promise<void>;
-  onDeleteLesson: (lessonId: string) => Promise<void>;
+  onUpdateCourse: (updates: Partial<Course>) => Promise<{ error: Error | null }>;
+  onCreateSection: (title: string) => Promise<{ data?: unknown; error: Error | null }>;
+  onUpdateSection: (sectionId: string, updates: Partial<CourseSection>) => Promise<{ error: Error | null }>;
+  onDeleteSection: (sectionId: string) => Promise<{ error: Error | null }>;
+  onCreateLesson: (sectionId: string, lesson: Partial<CourseLesson>) => Promise<{ data?: unknown; error: Error | null }>;
+  onUpdateLesson: (lessonId: string, updates: Partial<CourseLesson>) => Promise<{ error: Error | null }>;
+  onDeleteLesson: (lessonId: string) => Promise<{ error: Error | null }>;
   onEditCourse: () => void;
   onDeleteCourse: () => void;
 }
@@ -330,7 +330,7 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
       <AddLessonModal
         open={addLessonOpen}
         onOpenChange={setAddLessonOpen}
-        onSubmit={(lesson) => activeSectionId ? onCreateLesson(activeSectionId, lesson) : Promise.resolve()}
+        onSubmit={(lesson) => activeSectionId ? onCreateLesson(activeSectionId, lesson) : Promise.resolve({ error: null })}
       />
 
       {/* Delete Confirmation */}
