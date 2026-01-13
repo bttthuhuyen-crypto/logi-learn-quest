@@ -336,6 +336,10 @@ interface LeaderboardTranslations {
   searchPlaceholder: string;
   loadMore: string;
   noResults: string;
+  top3: string;
+  jumpToRank: string;
+  yourPosition: string;
+  pointsEarned: string;
 }
 
 interface AboutTranslations {
@@ -946,6 +950,10 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       searchPlaceholder: 'Tìm kiếm thành viên...',
       loadMore: 'Xem thêm',
       noResults: 'Không tìm thấy thành viên nào',
+      top3: 'Top 3',
+      jumpToRank: 'Xem vị trí của bạn',
+      yourPosition: 'Vị trí của bạn',
+      pointsEarned: 'điểm kiếm được',
     },
     about: {
       title: '10X Logistics',
@@ -1516,6 +1524,10 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       searchPlaceholder: 'Search members...',
       loadMore: 'Load More',
       noResults: 'No members found',
+      top3: 'Top 3',
+      jumpToRank: 'Jump to your rank',
+      yourPosition: 'Your position',
+      pointsEarned: 'points earned',
     },
     about: {
       title: '10X Logistics',
