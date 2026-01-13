@@ -335,6 +335,28 @@ interface NotificationTranslations {
   welcomeMessage: string;
 }
 
+interface NotificationSettingsTranslations {
+  title: string;
+  emailSection: string;
+  emailDigest: string;
+  emailNotifications: string;
+  adminAnnouncements: string;
+  eventReminders: string;
+  inAppSection: string;
+  likes: string;
+  comments: string;
+  mentions: string;
+  followers: string;
+  followingPosts: string;
+  pushSection: string;
+  pushEnabled: string;
+  off: string;
+  instant: string;
+  daily: string;
+  weekly: string;
+  settingsSaved: string;
+}
+
 interface StatusTranslations {
   pending: string;
   approved: string;
@@ -383,6 +405,7 @@ export interface TranslationKeys {
   leaderboard: LeaderboardTranslations;
   about: AboutTranslations;
   notifications: NotificationTranslations;
+  notificationSettings: NotificationSettingsTranslations;
   status: StatusTranslations;
   errors: ErrorTranslations;
 }
@@ -709,6 +732,27 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       membershipDeclined: 'Yêu cầu tham gia của bạn bị từ chối.',
       newMemberRequest: '{name} yêu cầu tham gia cộng đồng',
       welcomeMessage: 'Chào mừng bạn đến với 10X Logistics!',
+    },
+    notificationSettings: {
+      title: 'Cài đặt thông báo',
+      emailSection: 'Thông báo email',
+      emailDigest: 'Tổng hợp email',
+      emailNotifications: 'Thông báo email',
+      adminAnnouncements: 'Thông báo từ quản trị viên',
+      eventReminders: 'Nhắc nhở sự kiện',
+      inAppSection: 'Thông báo trong ứng dụng',
+      likes: 'Lượt thích',
+      comments: 'Bình luận',
+      mentions: 'Nhắc đến bạn',
+      followers: 'Người theo dõi mới',
+      followingPosts: 'Bài viết từ người bạn theo dõi',
+      pushSection: 'Thông báo đẩy',
+      pushEnabled: 'Bật thông báo đẩy',
+      off: 'Tắt',
+      instant: 'Ngay lập tức',
+      daily: 'Hàng ngày',
+      weekly: 'Hàng tuần',
+      settingsSaved: 'Đã lưu cài đặt',
     },
     status: {
       pending: 'Đang chờ',
@@ -1063,6 +1107,27 @@ export const translations: Record<'vi' | 'en', TranslationKeys> = {
       membershipDeclined: 'Your membership request has been declined.',
       newMemberRequest: '{name} requested to join the community',
       welcomeMessage: 'Welcome to 10X Logistics!',
+    },
+    notificationSettings: {
+      title: 'Notification Settings',
+      emailSection: 'Email Notifications',
+      emailDigest: 'Email Digest',
+      emailNotifications: 'Email Notifications',
+      adminAnnouncements: 'Admin Announcements',
+      eventReminders: 'Event Reminders',
+      inAppSection: 'In-App Notifications',
+      likes: 'Likes',
+      comments: 'Comments',
+      mentions: 'Mentions',
+      followers: 'New Followers',
+      followingPosts: 'Posts from Following',
+      pushSection: 'Push Notifications',
+      pushEnabled: 'Enable Push Notifications',
+      off: 'Off',
+      instant: 'Instant',
+      daily: 'Daily',
+      weekly: 'Weekly',
+      settingsSaved: 'Settings saved',
     },
     status: {
       pending: 'Pending',

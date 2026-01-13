@@ -3,7 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +21,11 @@ import {
   Trophy,
   Save,
   X,
+  Bell,
 } from 'lucide-react';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { language, t, formatDate } = useLanguage();
   const { user, profile, loading, refreshProfile } = useAuth();
   
@@ -349,6 +351,17 @@ const Profile = () => {
                     {profile?.preferred_language === 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}
                   </p>
                 </div>
+              </div>
+
+              <div className="pt-2 border-t border-border">
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => navigate('/settings/notifications')}
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  {t.notificationSettings.title}
+                </Button>
               </div>
             </CardContent>
           </Card>
