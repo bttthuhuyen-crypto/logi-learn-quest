@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search, Menu, X, Globe, Shield, Handshake } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -89,6 +90,9 @@ export const Header = () => {
               className="w-64 pl-9 bg-muted/50"
             />
           </div>
+
+          {/* Notification Bell - Only for logged in users */}
+          {user && <NotificationBell />}
 
           {/* Language Switcher */}
           <DropdownMenu>
