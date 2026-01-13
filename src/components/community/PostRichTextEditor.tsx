@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -47,6 +47,20 @@ export const PostRichTextEditor: React.FC<PostRichTextEditorProps> = ({
       onChange(editor.getHTML());
     },
   });
+
+  // Update editor content when content prop changes from outside
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      // Only update if the content is different to avoid cursor jumping
+      const currentContent = editor.getHTML();
+      // Check if content is empty or different
+      if (content === '' && currentContent !== '<p></p>') {
+        editor.commands.setContent('');
+      } else if (content && content !== currentContent && content !== '<p></p>') {
+        editor.commands.setContent(content);
+      }
+    }
+  }, [content, editor]);
 
   const addLink = useCallback(() => {
     const url = window.prompt('Nhập URL:');
