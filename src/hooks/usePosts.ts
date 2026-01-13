@@ -4,6 +4,30 @@ import { useEffect } from 'react';
 
 export type SortOption = 'default' | 'new' | 'top_week' | 'top_month';
 
+export interface PostMedia {
+  id: string;
+  media_type: 'image' | 'video' | 'gif' | 'link';
+  media_url: string;
+  thumbnail_url: string | null;
+  order_index: number;
+}
+
+export interface PollOption {
+  id: string;
+  option_text: string;
+  vote_count: number;
+  order_index: number;
+}
+
+export interface Poll {
+  id: string;
+  question: string;
+  is_multiple_choice: boolean;
+  ends_at: string | null;
+  options: PollOption[];
+  total_votes: number;
+}
+
 export interface Post {
   id: string;
   author_id: string;
@@ -21,14 +45,19 @@ export interface Post {
   created_at: string;
   updated_at: string;
   author?: {
+    user_id: string;
     full_name: string | null;
     avatar_url: string | null;
+    level: number | null;
   };
   category?: {
+    id: string;
     name: string;
     emoji: string | null;
     slug: string;
   };
+  media?: PostMedia[];
+  poll?: Poll;
 }
 
 interface UsePostsOptions {
@@ -48,7 +77,7 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
         .from('posts')
         .select(`
           *,
-          category:categories(name, emoji, slug)
+          category:categories(id, name, emoji, slug)
         `);
 
       if (categoryId) {
@@ -79,7 +108,6 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
             .order('like_count', { ascending: false });
           break;
         default:
-          // Default: pinned first, then by last_activity_at
           query = query
             .order('is_pinned', { ascending: false })
             .order('last_activity_at', { ascending: false });
@@ -88,39 +116,72 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
       query = query.limit(limit);
 
       const { data, error } = await query;
-
       if (error) throw error;
 
-      // Fetch author profiles separately
+      // Fetch author profiles with level
       const authorIds = [...new Set(data.map((post: any) => post.author_id))];
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, full_name, avatar_url')
+        .select('user_id, full_name, avatar_url, level')
         .in('user_id', authorIds);
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
+      // Fetch media for all posts
+      const postIds = data.map((post: any) => post.id);
+      const { data: mediaData } = await supabase
+        .from('post_media')
+        .select('*')
+        .in('post_id', postIds)
+        .order('order_index');
+
+      const mediaMap = new Map<string, PostMedia[]>();
+      mediaData?.forEach((m: any) => {
+        if (!mediaMap.has(m.post_id)) {
+          mediaMap.set(m.post_id, []);
+        }
+        mediaMap.get(m.post_id)!.push(m);
+      });
+
+      // Fetch polls for poll posts
+      const pollPostIds = data.filter((p: any) => p.content_type === 'poll').map((p: any) => p.id);
+      let pollMap = new Map<string, Poll>();
+
+      if (pollPostIds.length > 0) {
+        const { data: pollsData } = await supabase
+          .from('polls')
+          .select(`
+            *,
+            options:poll_options(*)
+          `)
+          .in('post_id', pollPostIds);
+
+        pollsData?.forEach((poll: any) => {
+          const totalVotes = poll.options?.reduce((sum: number, opt: any) => sum + opt.vote_count, 0) || 0;
+          pollMap.set(poll.post_id, {
+            ...poll,
+            options: poll.options?.sort((a: any, b: any) => a.order_index - b.order_index) || [],
+            total_votes: totalVotes,
+          });
+        });
+      }
+
       return data.map((post: any) => ({
         ...post,
-        author: profileMap.get(post.author_id) || { full_name: null, avatar_url: null },
+        author: profileMap.get(post.author_id) || { user_id: post.author_id, full_name: null, avatar_url: null, level: null },
+        media: mediaMap.get(post.id) || [],
+        poll: pollMap.get(post.id),
       })) as Post[];
     },
   });
 
-  // Subscribe to realtime updates
   useEffect(() => {
     const channel = supabase
       .channel('posts-changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'posts',
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['posts'] });
-        }
+        { event: '*', schema: 'public', table: 'posts' },
+        () => queryClient.invalidateQueries({ queryKey: ['posts'] })
       )
       .subscribe();
 
@@ -152,10 +213,7 @@ export const useCreatePost = () => {
 
       const { data, error } = await supabase
         .from('posts')
-        .insert({
-          ...post,
-          author_id: user.id,
-        })
+        .insert({ ...post, author_id: user.id })
         .select()
         .single();
 
