@@ -33,6 +33,8 @@ const getNotificationIcon = (type: string) => {
       return '❌';
     case 'new_signup':
       return '🎉';
+    case 'new_membership_request':
+      return '📥';
     case 'commission':
       return '💰';
     case 'payout':
