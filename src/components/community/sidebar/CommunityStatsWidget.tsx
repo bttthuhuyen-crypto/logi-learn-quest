@@ -3,9 +3,11 @@ import { BarChart3, Users, Activity, FileText } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export const CommunityStatsWidget: React.FC = () => {
   const queryClient = useQueryClient();
+  const { t, language } = useLanguage();
 
   // Fetch total members
   const { data: totalMembers, isLoading: loadingMembers } = useQuery({
@@ -73,18 +75,18 @@ export const CommunityStatsWidget: React.FC = () => {
     {
       icon: Users,
       value: totalMembers || 0,
-      label: 'Thành viên',
+      label: language === 'vi' ? 'Thành viên' : 'Members',
     },
     {
       icon: Activity,
       value: onlineCount || 0,
-      label: 'Đang online',
+      label: language === 'vi' ? 'Đang online' : 'Online',
       highlight: true,
     },
     {
       icon: FileText,
       value: postsThisWeek || 0,
-      label: 'Bài tuần này',
+      label: language === 'vi' ? 'Bài tuần này' : 'Posts this week',
     },
   ];
 
@@ -92,7 +94,7 @@ export const CommunityStatsWidget: React.FC = () => {
     <div className="bg-card border border-border rounded-lg p-4">
       <div className="flex items-center gap-2 mb-4">
         <BarChart3 className="h-4 w-4 text-muted-foreground" />
-        <h3 className="font-semibold text-sm">Thống kê</h3>
+        <h3 className="font-semibold text-sm">{language === 'vi' ? 'Thống kê' : 'Statistics'}</h3>
       </div>
 
       {isLoading ? (

@@ -18,7 +18,7 @@ import { MessageBubble } from './MessageBubble';
 import { ChatLockedOverlay } from './ChatLockedOverlay';
 import { BlockUserDialog } from './BlockUserDialog';
 import { ReportUserModal } from './ReportUserModal';
-import { OnlineStatusIndicator } from './OnlineStatusIndicator';
+import { StatusIndicator } from '@/components/members/StatusIndicator';
 import { ConversationWithDetails } from '@/hooks/useConversations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -190,8 +190,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               {getInitials(conversation.otherParticipant?.full_name)}
             </AvatarFallback>
           </Avatar>
-          <OnlineStatusIndicator 
-            isOnline={otherUserPresence.isOnline}
+          <StatusIndicator 
+            status={otherUserPresence.status}
             size="sm"
             className="absolute bottom-0 right-0"
           />
@@ -201,8 +201,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             {conversation.otherParticipant?.full_name || 'Người dùng'}
           </h3>
           <p className="text-xs text-muted-foreground">
-            {otherUserPresence.isOnline 
+            {otherUserPresence.status === 'online' 
               ? (language === 'vi' ? 'Đang hoạt động' : 'Online')
+              : otherUserPresence.status === 'away'
+              ? (language === 'vi' ? 'Vắng mặt' : 'Away')
               : (language === 'vi' ? 'Ngoại tuyến' : 'Offline')
             }
           </p>

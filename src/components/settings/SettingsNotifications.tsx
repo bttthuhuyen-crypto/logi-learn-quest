@@ -1,16 +1,18 @@
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useNotificationSettings } from '@/hooks/useNotificationSettings';
+import { usePresence } from '@/contexts/PresenceContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Bell, Mail, BellOff, Save } from 'lucide-react';
+import { Bell, Mail, BellOff, Save, Eye } from 'lucide-react';
 
 export const SettingsNotifications = () => {
   const { t } = useLanguage();
   const { settings, isLoading, updateSetting, disableAllNotifications, isUpdating } = useNotificationSettings();
+  const { showOnlineStatus, toggleVisibility, isUpdating: isUpdatingPresence } = usePresence();
 
   if (isLoading) {
     return (
@@ -173,6 +175,28 @@ export const SettingsNotifications = () => {
               disabled={isUpdating}
             />
           </SettingRow>
+        </CardContent>
+      </Card>
+
+      {/* Privacy Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Eye className="h-5 w-5" />
+            {t.settings?.privacy || 'Quyền riêng tư'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          <SettingRow label={t.settings?.showOnlineStatus || 'Hiển thị trạng thái online'}>
+            <Switch
+              checked={showOnlineStatus}
+              onCheckedChange={toggleVisibility}
+              disabled={isUpdatingPresence}
+            />
+          </SettingRow>
+          <p className="text-xs text-muted-foreground mt-2">
+            {t.settings?.showOnlineStatusHint || 'Khi tắt, người khác sẽ không thấy bạn đang online'}
+          </p>
         </CardContent>
       </Card>
 
