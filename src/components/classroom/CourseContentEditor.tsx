@@ -8,6 +8,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Course, CourseLesson } from '@/hooks/useCourses';
 import { Monitor, Smartphone, Pencil, Trash2, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface CourseContentEditorProps {
   course: Course;
@@ -203,7 +204,7 @@ export const CourseContentEditor: React.FC<CourseContentEditorProps> = ({
               ) : introContent ? (
                 <div 
                   className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: introContent }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(introContent) }}
                 />
               ) : (
                 <div className="text-center py-12 text-muted-foreground">

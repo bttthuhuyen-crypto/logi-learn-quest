@@ -23,6 +23,7 @@ import { useDeletePost, usePinPost } from '@/hooks/usePostActions';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -417,11 +418,11 @@ const ContentPreview: React.FC<{ content: string }> = ({ content }) => {
 
   // Truncate HTML content safely
   const getTruncatedContent = () => {
-    if (!shouldTruncate || expanded) return content;
+    if (!shouldTruncate || expanded) return sanitizeHtml(content);
     
     // Create truncated plain text
     const truncated = plainText.slice(0, MAX_LENGTH);
-    return `<p>${truncated}...</p>`;
+    return sanitizeHtml(`<p>${truncated}...</p>`);
   };
 
   return (
