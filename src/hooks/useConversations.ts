@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export interface ConversationWithDetails {
   id: string;
@@ -25,74 +25,74 @@ export interface ConversationWithDetails {
 export const useConversations = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { data: conversations = [], isLoading, error } = useQuery({
     queryKey: ['conversations', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Get blocked users
-      const { data: blockedData } = await supabase
-        .from('blocked_users')
-        .select('blocked_id')
-        .eq('blocker_id', user.id);
-      
-      const blockedUserIds = blockedData?.map(b => b.blocked_id) || [];
+      // OPTIMIZED: Parallel fetch blocked users and participations
+      const [blockedResult, participationsResult] = await Promise.all([
+        supabase
+          .from('blocked_users')
+          .select('blocked_id')
+          .eq('blocker_id', user.id),
+        supabase
+          .from('conversation_participants')
+          .select(`
+            conversation_id,
+            last_read_at,
+            conversations (
+              id,
+              type,
+              created_at,
+              updated_at
+            )
+          `)
+          .eq('user_id', user.id)
+          .is('left_at', null),
+      ]);
 
-      // Get all conversations user participates in
-      const { data: participations, error: partError } = await supabase
-        .from('conversation_participants')
-        .select(`
-          conversation_id,
-          last_read_at,
-          conversations (
-            id,
-            type,
-            created_at,
-            updated_at
-          )
-        `)
-        .eq('user_id', user.id)
-        .is('left_at', null);
+      const blockedUserIds = blockedResult.data?.map(b => b.blocked_id) || [];
 
-      if (partError) throw partError;
-      if (!participations || participations.length === 0) return [];
+      if (participationsResult.error) throw participationsResult.error;
+      if (!participationsResult.data || participationsResult.data.length === 0) return [];
 
-      const conversationIds = participations.map(p => p.conversation_id);
+      const conversationIds = participationsResult.data.map(p => p.conversation_id);
 
-      // Get other participants for each conversation
-      const { data: allParticipants, error: allPartError } = await supabase
-        .from('conversation_participants')
-        .select(`
-          conversation_id,
-          user_id,
-          profiles (
+      // OPTIMIZED: Parallel fetch other participants and messages
+      const [allParticipantsResult, lastMessagesResult] = await Promise.all([
+        supabase
+          .from('conversation_participants')
+          .select(`
+            conversation_id,
             user_id,
-            full_name,
-            avatar_url
-          )
-        `)
-        .in('conversation_id', conversationIds)
-        .neq('user_id', user.id)
-        .is('left_at', null);
+            profiles (
+              user_id,
+              full_name,
+              avatar_url
+            )
+          `)
+          .in('conversation_id', conversationIds)
+          .neq('user_id', user.id)
+          .is('left_at', null),
+        supabase
+          .from('messages')
+          .select('conversation_id, content, created_at, sender_id, message_type')
+          .in('conversation_id', conversationIds)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false }),
+      ]);
 
-      if (allPartError) throw allPartError;
-
-      // Get last message for each conversation
-      const { data: lastMessages, error: msgError } = await supabase
-        .from('messages')
-        .select('conversation_id, content, created_at, sender_id, message_type')
-        .in('conversation_id', conversationIds)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-      if (msgError) throw msgError;
+      if (allParticipantsResult.error) throw allParticipantsResult.error;
+      if (lastMessagesResult.error) throw lastMessagesResult.error;
 
       // Build conversation details (filter out blocked users)
-      const conversationsWithDetails = participations
+      const conversationsWithDetails = participationsResult.data
         .map(p => {
           const conversation = p.conversations as any;
-          const otherParticipant = allParticipants?.find(
+          const otherParticipant = allParticipantsResult.data?.find(
             ap => ap.conversation_id === p.conversation_id
           );
           const profile = otherParticipant?.profiles as any;
@@ -103,10 +103,10 @@ export const useConversations = () => {
           }
         
           // Get last message for this conversation
-          const lastMsg = lastMessages?.find(m => m.conversation_id === p.conversation_id);
+          const lastMsg = lastMessagesResult.data?.find(m => m.conversation_id === p.conversation_id);
           
           // Count unread messages
-          const unreadCount = lastMessages?.filter(m => 
+          const unreadCount = lastMessagesResult.data?.filter(m => 
             m.conversation_id === p.conversation_id &&
             m.sender_id !== user.id &&
             (!p.last_read_at || new Date(m.created_at) > new Date(p.last_read_at))
@@ -143,11 +143,16 @@ export const useConversations = () => {
     enabled: !!user?.id,
   });
 
-  // Real-time subscription for new messages
+  // OPTIMIZED: Use ref to prevent multiple subscriptions
   useEffect(() => {
     if (!user?.id) return;
 
-    const channel = supabase
+    // Cleanup previous channel if exists
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
+    channelRef.current = supabase
       .channel('conversations-messages')
       .on(
         'postgres_changes',
@@ -163,7 +168,10 @@ export const useConversations = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [user?.id, queryClient]);
 
