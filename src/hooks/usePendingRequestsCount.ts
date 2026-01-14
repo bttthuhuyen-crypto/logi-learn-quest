@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscribeToTable } from '@/lib/realtimeManager';
 
 export const usePendingRequestsCount = () => {
   const queryClient = useQueryClient();
@@ -14,7 +15,6 @@ export const usePendingRequestsCount = () => {
         .eq('status', 'pending');
 
       if (error) {
-        console.error('Error fetching pending count:', error);
         return 0;
       }
 
@@ -22,26 +22,16 @@ export const usePendingRequestsCount = () => {
     },
   });
 
-  // Subscribe to realtime updates
+  // Subscribe to realtime updates using shared manager
   useEffect(() => {
-    const channel = supabase
-      .channel('pending-requests-count')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'membership_requests',
-        },
-        () => {
-          // Refetch count when any change happens
-          queryClient.invalidateQueries({ queryKey: ['pending-requests-count'] });
-        }
-      )
-      .subscribe();
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-requests-count'] });
+    };
+
+    const unsubscribe = subscribeToTable('membership_requests', handleUpdate);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [queryClient]);
 

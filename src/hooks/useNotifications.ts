@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { subscribeToTable } from '@/lib/realtimeManager';
 
 export interface Notification {
   id: string;
@@ -25,6 +26,8 @@ export interface Notification {
 export const useNotifications = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const userIdRef = useRef(user?.id);
+  userIdRef.current = user?.id;
 
   // Fetch notifications
   const { data: notifications = [], isLoading, refetch } = useQuery({
@@ -121,28 +124,21 @@ export const useNotifications = () => {
     },
   });
 
-  // Subscribe to real-time notifications
+  // Subscribe to real-time notifications using shared manager
   useEffect(() => {
     if (!user?.id) return;
 
-    const channel = supabase
-      .channel('notifications-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          refetch();
-        }
-      )
-      .subscribe();
+    const handleUpdate = (payload: any) => {
+      // Only handle INSERT for current user
+      if (payload.eventType === 'INSERT' && payload.new?.user_id === userIdRef.current) {
+        refetch();
+      }
+    };
+
+    const unsubscribe = subscribeToTable('notifications', handleUpdate);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [user?.id, refetch]);
 

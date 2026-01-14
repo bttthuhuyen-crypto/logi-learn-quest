@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { subscribeToTable } from '@/lib/realtimeManager';
 
 export interface Message {
   id: string;
@@ -25,6 +26,8 @@ export interface Message {
 export const useMessages = (conversationId: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const conversationIdRef = useRef(conversationId);
+  conversationIdRef.current = conversationId;
 
   const { data: messages = [], isLoading, error } = useQuery({
     queryKey: ['messages', conversationId],
@@ -53,29 +56,23 @@ export const useMessages = (conversationId: string | null) => {
     enabled: !!conversationId && !!user?.id,
   });
 
-  // Real-time subscription for new messages in this conversation
+  // Real-time subscription using shared manager
   useEffect(() => {
     if (!conversationId || !user?.id) return;
 
-    const channel = supabase
-      .channel(`messages-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
-          queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
-        }
-      )
-      .subscribe();
+    const handleUpdate = (payload: any) => {
+      // Client-side filter by conversation
+      const record = payload.new || payload.old;
+      if (record?.conversation_id === conversationIdRef.current) {
+        queryClient.invalidateQueries({ queryKey: ['messages', conversationIdRef.current] });
+        queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
+      }
+    };
+
+    const unsubscribe = subscribeToTable('messages', handleUpdate);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [conversationId, user?.id, queryClient]);
 

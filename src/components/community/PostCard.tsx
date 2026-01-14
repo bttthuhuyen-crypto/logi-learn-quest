@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ interface PostCardProps {
   onEditPost?: (post: Post) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ 
+const PostCardComponent: React.FC<PostCardProps> = ({ 
   post, 
   isLiked = false, 
   isFollowing = false,
@@ -179,7 +179,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-foreground/20 transition-all"
               onClick={handleAuthorClick}
             >
-              <AvatarImage src={post.author?.avatar_url || ''} />
+              <AvatarImage src={post.author?.avatar_url || ''} loading="lazy" decoding="async" />
               <AvatarFallback className="bg-muted text-muted-foreground">
                 {post.author?.full_name?.charAt(0) || 'U'}
               </AvatarFallback>
@@ -395,6 +395,19 @@ export const PostCard: React.FC<PostCardProps> = ({
     </>
   );
 };
+
+// Memoize with custom comparison for performance
+export const PostCard = memo(PostCardComponent, (prev, next) => {
+  return (
+    prev.post.id === next.post.id &&
+    prev.post.like_count === next.post.like_count &&
+    prev.post.comment_count === next.post.comment_count &&
+    prev.post.updated_at === next.post.updated_at &&
+    prev.post.is_pinned === next.post.is_pinned &&
+    prev.isLiked === next.isLiked &&
+    prev.isFollowing === next.isFollowing
+  );
+});
 
 // Content preview with "Xem thêm" functionality
 const ContentPreview: React.FC<{ content: string }> = ({ content }) => {

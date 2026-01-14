@@ -6,6 +6,7 @@ import { getLevelName } from '@/utils/levelConfig';
 import { useLevelConfig } from '@/hooks/useLevelConfig';
 import { useCreateNotification } from '@/hooks/useCreateNotification';
 import { playLevelUpSound } from '@/utils/sounds';
+import { subscribeToTable } from '@/lib/realtimeManager';
 
 interface LevelUpData {
   oldLevel: number;
@@ -29,6 +30,8 @@ export function LevelUpCelebrationProvider({ children }: { children: React.React
   const [celebrationData, setCelebrationData] = useState<LevelUpData | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const previousLevelRef = useRef<number | null>(null);
+  const userIdRef = useRef(user?.id);
+  userIdRef.current = user?.id;
   const { data: levelConfig } = useLevelConfig(DEFAULT_COMMUNITY_ID);
   const { createNotificationAsync } = useCreateNotification();
 
@@ -62,7 +65,6 @@ export function LevelUpCelebrationProvider({ children }: { children: React.React
         description: r.description,
       }));
     } catch (error) {
-      console.error('Error fetching rewards:', error);
       return [];
     }
   }, []);
@@ -88,7 +90,7 @@ export function LevelUpCelebrationProvider({ children }: { children: React.React
             } as unknown as import('@/integrations/supabase/types').Json,
           });
         } catch (error) {
-          console.error('Error creating level up notification:', error);
+          // Silent fail for notification
         }
       }
 
@@ -102,7 +104,7 @@ export function LevelUpCelebrationProvider({ children }: { children: React.React
     [levelConfig, fetchRewardsForLevel, showCelebration, user?.id, createNotificationAsync]
   );
 
-  // Subscribe to realtime changes on community_members
+  // Subscribe to realtime changes on community_members using shared manager
   useEffect(() => {
     if (!user?.id) return;
 
@@ -122,33 +124,26 @@ export function LevelUpCelebrationProvider({ children }: { children: React.React
 
     fetchInitialLevel();
 
-    const channel = supabase
-      .channel('level-up-detection')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'community_members',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newLevel = (payload.new as { level?: number })?.level || 1;
-          const oldLevel = previousLevelRef.current || 1;
+    const handleUpdate = (payload: any) => {
+      // Client-side filter for current user
+      if (payload.eventType === 'UPDATE' && payload.new?.user_id === userIdRef.current) {
+        const newLevel = payload.new?.level || 1;
+        const oldLevel = previousLevelRef.current || 1;
 
-          if (newLevel > oldLevel) {
-            // Level up detected!
-            handleLevelUp(oldLevel, newLevel);
-          }
-
-          // Update ref
-          previousLevelRef.current = newLevel;
+        if (newLevel > oldLevel) {
+          // Level up detected!
+          handleLevelUp(oldLevel, newLevel);
         }
-      )
-      .subscribe();
+
+        // Update ref
+        previousLevelRef.current = newLevel;
+      }
+    };
+
+    const unsubscribe = subscribeToTable('community_members', handleUpdate);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [user?.id, handleLevelUp]);
 
