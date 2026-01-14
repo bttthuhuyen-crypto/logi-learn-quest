@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export type SortOption = 'default' | 'new' | 'top_week' | 'top_month' | 'following';
 
@@ -201,29 +202,93 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
     },
   });
 
-  // OPTIMIZED: Use ref to prevent multiple subscriptions
+  // Debounced invalidation for complex updates that need full refetch
+  const pendingInvalidateRef = useRef<NodeJS.Timeout | null>(null);
+  const debouncedInvalidate = useCallback(() => {
+    if (pendingInvalidateRef.current) {
+      clearTimeout(pendingInvalidateRef.current);
+    }
+    pendingInvalidateRef.current = setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      pendingInvalidateRef.current = null;
+    }, 300);
+  }, [queryClient]);
+
+  // OPTIMIZED: Use setQueryData for simple updates, invalidate only when needed
   useEffect(() => {
-    // Cleanup previous channel if exists
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
     }
+
+    const handleRealtimeChange = (
+      payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
+    ) => {
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+
+      // For DELETE, we can safely remove from cache
+      if (eventType === 'DELETE' && oldRecord?.id) {
+        queryClient.setQueriesData<Post[]>(
+          { queryKey: ['posts'] },
+          (oldData) => oldData?.filter(post => post.id !== oldRecord.id)
+        );
+        return;
+      }
+
+      // For UPDATE on simple fields (like_count, comment_count, is_pinned), update cache directly
+      if (eventType === 'UPDATE' && newRecord?.id) {
+        const simpleUpdateFields = ['like_count', 'comment_count', 'is_pinned', 'pinned_at', 'last_activity_at', 'action_completed_count'];
+        const changedKeys = Object.keys(newRecord);
+        const isSimpleUpdate = changedKeys.every(key => 
+          simpleUpdateFields.includes(key) || key === 'id' || key === 'updated_at'
+        );
+
+        if (isSimpleUpdate) {
+          queryClient.setQueriesData<Post[]>(
+            { queryKey: ['posts'] },
+            (oldData) => oldData?.map(post => 
+              post.id === newRecord.id 
+                ? { ...post, ...newRecord }
+                : post
+            )
+          );
+          return;
+        }
+      }
+
+      // For INSERT or complex UPDATE (title, content, category change), debounce full refetch
+      // because we need to fetch related data (author, media, poll)
+      debouncedInvalidate();
+    };
 
     channelRef.current = supabase
       .channel('posts-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'posts' },
-        () => queryClient.invalidateQueries({ queryKey: ['posts'] })
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        handleRealtimeChange
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'posts' },
+        handleRealtimeChange
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'posts' },
+        handleRealtimeChange
       )
       .subscribe();
 
     return () => {
+      if (pendingInvalidateRef.current) {
+        clearTimeout(pendingInvalidateRef.current);
+      }
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [queryClient]);
+  }, [queryClient, debouncedInvalidate]);
 
   return query;
 };
