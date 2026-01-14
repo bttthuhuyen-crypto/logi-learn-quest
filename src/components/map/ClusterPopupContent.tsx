@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LevelBadge } from "@/components/community/LevelBadge";
 import { StatusDot } from "./StatusDot";
-import { useLanguage } from "@/i18n/LanguageContext";
 import { UserLocation } from "@/hooks/useUserLocations";
 import { MapPin, MessageCircle, Users, ChevronRight } from "lucide-react";
 
@@ -13,35 +11,32 @@ interface ClusterPopupContentProps {
   members: UserLocation[];
   totalCount: number;
   locationName?: string;
+  language?: 'vi' | 'en';
   onViewAll?: () => void;
   onMemberClick?: (member: UserLocation) => void;
+  onChatClick?: (userId: string) => void;
 }
 
 export const ClusterPopupContent = ({
   members,
   totalCount,
   locationName,
+  language = 'vi',
   onViewAll,
   onMemberClick,
+  onChatClick,
 }: ClusterPopupContentProps) => {
-  const { language } = useLanguage();
-  const navigate = useNavigate();
-  
   // Show first 5 members
   const displayMembers = members.slice(0, 5);
   const hasMore = totalCount > 5;
   
   const handleChat = (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/messenger?user=${userId}`);
+    onChatClick?.(userId);
   };
 
   const handleMemberClick = (member: UserLocation) => {
-    if (onMemberClick) {
-      onMemberClick(member);
-    } else {
-      navigate(`/members/${member.userId}`);
-    }
+    onMemberClick?.(member);
   };
 
   return (
