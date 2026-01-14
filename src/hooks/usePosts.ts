@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
@@ -70,10 +70,30 @@ interface UsePostsOptions {
   followingOnly?: boolean;
 }
 
+// Simple fields that can be updated directly in cache without refetch
+const SIMPLE_UPDATE_FIELDS = new Set([
+  'like_count', 'comment_count', 'is_pinned', 'pinned_at', 
+  'last_activity_at', 'action_completed_count', 'updated_at'
+]);
+
+// Complex fields that require full refetch to get related data
+const COMPLEX_UPDATE_FIELDS = new Set([
+  'title', 'content', 'category_id', 'author_id', 'content_type'
+]);
+
 export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly = false, followingOnly = false }: UsePostsOptions = {}) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pendingInvalidateRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Store queryClient in ref to avoid stale closure
+  const queryClientRef = useRef(queryClient);
+  queryClientRef.current = queryClient;
+
+  // Memoize filter values for stable closure reference
+  const filterRef = useRef({ categoryId, followingOnly });
+  filterRef.current = { categoryId, followingOnly };
 
   const query = useQuery({
     queryKey: ['posts', categoryId, sort, pinnedOnly, followingOnly, user?.id],
@@ -202,17 +222,16 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
     },
   });
 
-  // Debounced invalidation for complex updates that need full refetch
-  const pendingInvalidateRef = useRef<NodeJS.Timeout | null>(null);
+  // Stable debounced invalidation - uses ref to avoid stale closure
   const debouncedInvalidate = useCallback(() => {
     if (pendingInvalidateRef.current) {
       clearTimeout(pendingInvalidateRef.current);
     }
     pendingInvalidateRef.current = setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['posts'] });
       pendingInvalidateRef.current = null;
     }, 300);
-  }, [queryClient]);
+  }, []); // Empty deps - stable reference
 
   // OPTIMIZED: Use setQueryData for simple updates, invalidate only when needed
   useEffect(() => {
@@ -224,26 +243,27 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
       payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
     ) => {
       const { eventType, new: newRecord, old: oldRecord } = payload;
+      const currentFilter = filterRef.current;
 
-      // For DELETE, we can safely remove from cache
+      // For DELETE, safely remove from cache
       if (eventType === 'DELETE' && oldRecord?.id) {
-        queryClient.setQueriesData<Post[]>(
+        queryClientRef.current.setQueriesData<Post[]>(
           { queryKey: ['posts'] },
           (oldData) => oldData?.filter(post => post.id !== oldRecord.id)
         );
         return;
       }
 
-      // For UPDATE on simple fields (like_count, comment_count, is_pinned), update cache directly
+      // For UPDATE, check if it's a simple update (only counter/flag fields)
       if (eventType === 'UPDATE' && newRecord?.id) {
-        const simpleUpdateFields = ['like_count', 'comment_count', 'is_pinned', 'pinned_at', 'last_activity_at', 'action_completed_count'];
-        const changedKeys = Object.keys(newRecord);
-        const isSimpleUpdate = changedKeys.every(key => 
-          simpleUpdateFields.includes(key) || key === 'id' || key === 'updated_at'
-        );
-
-        if (isSimpleUpdate) {
-          queryClient.setQueriesData<Post[]>(
+        const changedKeys = Object.keys(newRecord).filter(key => key !== 'id');
+        
+        // Check if ANY complex field is present in the payload
+        const hasComplexChange = changedKeys.some(key => COMPLEX_UPDATE_FIELDS.has(key));
+        
+        if (!hasComplexChange) {
+          // Simple update - update cache directly without refetch
+          queryClientRef.current.setQueriesData<Post[]>(
             { queryKey: ['posts'] },
             (oldData) => oldData?.map(post => 
               post.id === newRecord.id 
@@ -253,11 +273,24 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
           );
           return;
         }
+        
+        // Complex update - need to refetch for related data
+        debouncedInvalidate();
+        return;
       }
 
-      // For INSERT or complex UPDATE (title, content, category change), debounce full refetch
-      // because we need to fetch related data (author, media, poll)
-      debouncedInvalidate();
+      // For INSERT, check if post matches current filter before invalidating
+      if (eventType === 'INSERT' && newRecord) {
+        // If category filter is active and post doesn't match, skip
+        if (currentFilter.categoryId && newRecord.category_id !== currentFilter.categoryId) {
+          return;
+        }
+        
+        // For followingOnly filter, we can't easily check without fetching following list
+        // So we debounce invalidate to let the queryFn handle the filter
+        debouncedInvalidate();
+        return;
+      }
     };
 
     channelRef.current = supabase
@@ -288,7 +321,7 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
         channelRef.current = null;
       }
     };
-  }, [queryClient, debouncedInvalidate]);
+  }, [debouncedInvalidate]); // Only debouncedInvalidate - filterRef handles dynamic values
 
   return query;
 };
@@ -349,8 +382,35 @@ export const useTogglePostLike = () => {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    // Optimistic update for instant UI feedback
+    onMutate: async ({ postId, isLiked }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['posts'] });
+      await queryClient.cancelQueries({ queryKey: ['post-likes'] });
+      
+      // Optimistically update like count in all post queries
+      queryClient.setQueriesData<Post[]>(
+        { queryKey: ['posts'] },
+        (oldData) => oldData?.map(post => 
+          post.id === postId 
+            ? { ...post, like_count: Math.max(0, post.like_count + (isLiked ? -1 : 1)) }
+            : post
+        )
+      );
+      
+      // Return context for rollback
+      return { postId, wasLiked: isLiked };
+    },
+    onError: (_error, _variables, context) => {
+      // Rollback on error - invalidate to get fresh data
+      if (context) {
+        queryClient.invalidateQueries({ queryKey: ['posts'] });
+        queryClient.invalidateQueries({ queryKey: ['post-likes'] });
+      }
+    },
+    onSuccess: (_data, { postId }) => {
+      // Only invalidate post-likes to update the like status, not full posts
+      queryClient.invalidateQueries({ queryKey: ['post-likes'] });
     },
   });
 };
