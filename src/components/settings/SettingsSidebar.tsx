@@ -1,3 +1,4 @@
+import React, { memo, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -25,22 +26,22 @@ interface MenuItem {
   path: string;
 }
 
-export const SettingsSidebar = () => {
+const SettingsSidebarComponent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { isAdmin } = useUserRole();
 
-  const accountItems: MenuItem[] = [
+  const accountItems: MenuItem[] = useMemo(() => [
     { icon: ClipboardList, label: language === 'vi' ? 'Hồ sơ' : 'Profile', path: '/settings/profile' },
     { icon: Bell, label: language === 'vi' ? 'Thông báo' : 'Notifications', path: '/settings/notifications' },
     { icon: CreditCard, label: language === 'vi' ? 'Thanh toán' : 'Payment', path: '/settings/payment' },
     { icon: Package, label: language === 'vi' ? 'Đơn hàng' : 'Orders', path: '/settings/orders' },
     { icon: Handshake, label: 'Affiliate', path: '/settings/affiliate' },
     { icon: Lock, label: language === 'vi' ? 'Bảo mật' : 'Security', path: '/settings/security' },
-  ];
+  ], [language]);
 
-  const adminItems: MenuItem[] = [
+  const adminItems: MenuItem[] = useMemo(() => [
     { icon: Settings, label: language === 'vi' ? 'Cài đặt chung' : 'General Settings', path: '/settings/admin/general' },
     { icon: FolderOpen, label: language === 'vi' ? 'Danh mục' : 'Categories', path: '/settings/admin/categories' },
     { icon: Plug, label: 'Plugins', path: '/settings/admin/plugins' },
@@ -48,7 +49,7 @@ export const SettingsSidebar = () => {
     { icon: Percent, label: language === 'vi' ? 'Hoa hồng' : 'Commission', path: '/settings/admin/commission' },
     { icon: Banknote, label: language === 'vi' ? 'Thanh toán' : 'Payments', path: '/settings/admin/payments' },
     { icon: BarChart3, label: language === 'vi' ? 'Thống kê' : 'Analytics', path: '/settings/admin/analytics' },
-  ];
+  ], [language]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -117,3 +118,5 @@ export const SettingsSidebar = () => {
     </aside>
   );
 };
+
+export const SettingsSidebar = memo(SettingsSidebarComponent);

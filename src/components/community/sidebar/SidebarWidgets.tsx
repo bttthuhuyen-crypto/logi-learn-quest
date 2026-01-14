@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { UpcomingEventsWidget } from './UpcomingEventsWidget';
 import { LeaderboardWidget } from './LeaderboardWidget';
 import { NewMembersWidget } from './NewMembersWidget';
 import { CommunityStatsWidget } from './CommunityStatsWidget';
 
-export const SidebarWidgets: React.FC = () => {
+const SidebarWidgetsComponent: React.FC = () => {
   return (
     <div className="space-y-6">
       <UpcomingEventsWidget />
@@ -14,3 +14,5 @@ export const SidebarWidgets: React.FC = () => {
     </div>
   );
 };
+
+export const SidebarWidgets = memo(SidebarWidgetsComponent);

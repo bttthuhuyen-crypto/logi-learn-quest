@@ -80,19 +80,30 @@ export const useUserPresence = () => {
     },
   });
 
-  // Set up presence tracking
+  // Set up presence tracking with requestIdleCallback for non-blocking updates
   useEffect(() => {
     if (!user?.id) return;
 
-    // Initialize presence on mount
-    updatePresence.mutate('online');
+    // Helper to schedule presence update in idle time
+    const schedulePresenceUpdate = (status: PresenceStatus) => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(() => {
+          updatePresence.mutate(status);
+        }, { timeout: 1000 });
+      } else {
+        updatePresence.mutate(status);
+      }
+    };
+
+    // Initialize presence on mount (scheduled in idle time)
+    schedulePresenceUpdate('online');
 
     // Set up visibility change handler
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        updatePresence.mutate('online');
+        schedulePresenceUpdate('online');
       } else {
-        updatePresence.mutate('away');
+        schedulePresenceUpdate('away');
       }
     };
 
@@ -112,12 +123,19 @@ export const useUserPresence = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Heartbeat to keep online status fresh - every 2 minutes
+    // Heartbeat to keep online status fresh - exactly 60 seconds as requested
     const heartbeat = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        updatePresence.mutate('online');
+        // Use requestIdleCallback to avoid blocking UI thread
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(() => {
+            updatePresence.mutate('online');
+          }, { timeout: 1000 });
+        } else {
+          updatePresence.mutate('online');
+        }
       }
-    }, 120000);
+    }, 60000);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
