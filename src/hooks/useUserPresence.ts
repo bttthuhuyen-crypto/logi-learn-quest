@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,8 +13,45 @@ interface UserPresence {
   show_online_status: boolean;
 }
 
-// Singleton channel for presence
-let presenceChannel: RealtimeChannel | null = null;
+// Singleton shared channel for all presence subscriptions
+let sharedPresenceChannel: RealtimeChannel | null = null;
+let channelRefCount = 0;
+const channelCallbacks = new Set<() => void>();
+
+const getSharedPresenceChannel = (onUpdate: () => void): RealtimeChannel => {
+  channelCallbacks.add(onUpdate);
+  
+  if (!sharedPresenceChannel) {
+    sharedPresenceChannel = supabase
+      .channel('global-presence-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_presence',
+        },
+        () => {
+          // Broadcast to all registered callbacks
+          channelCallbacks.forEach(cb => cb());
+        }
+      )
+      .subscribe();
+  }
+  
+  channelRefCount++;
+  return sharedPresenceChannel;
+};
+
+const releaseSharedPresenceChannel = (onUpdate: () => void) => {
+  channelCallbacks.delete(onUpdate);
+  channelRefCount--;
+  
+  if (channelRefCount === 0 && sharedPresenceChannel) {
+    supabase.removeChannel(sharedPresenceChannel);
+    sharedPresenceChannel = null;
+  }
+};
 
 export const useUserPresence = () => {
   const { user } = useAuth();
@@ -120,7 +157,7 @@ export const useUserPresence = () => {
       if (document.visibilityState === 'visible') {
         updatePresence.mutate('online');
       }
-    }, 60000); // Every minute
+    }, 120000); // Every 2 minutes (was 1 minute)
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -143,9 +180,11 @@ export const useUserPresence = () => {
 // Hook to get presence status of specific users with realtime updates
 export const useUsersPresence = (userIds: string[]) => {
   const queryClient = useQueryClient();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const sortedIds = userIds.slice().sort().join(',');
   
   const { data: presenceData = [], isLoading } = useQuery({
-    queryKey: ['users-presence', userIds.sort().join(',')],
+    queryKey: ['users-presence', sortedIds],
     queryFn: async () => {
       if (userIds.length === 0) return [];
 
@@ -158,37 +197,36 @@ export const useUsersPresence = (userIds: string[]) => {
       return data as UserPresence[];
     },
     enabled: userIds.length > 0,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 60000, // Refetch every 60 seconds (was 30s)
   });
 
-  // Subscribe to realtime presence changes
+  // Subscribe to shared realtime presence channel
   useEffect(() => {
     if (userIds.length === 0) return;
 
-    const channel = supabase
-      .channel(`users-presence-${userIds.slice(0, 5).join('-')}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_presence',
-        },
-        (payload) => {
-          const changedUserId = (payload.new as any)?.user_id || (payload.old as any)?.user_id;
-          if (userIds.includes(changedUserId)) {
-            queryClient.invalidateQueries({ 
-              queryKey: ['users-presence', userIds.sort().join(',')] 
-            });
-          }
-        }
-      )
-      .subscribe();
+    // Debounced update handler to batch rapid changes
+    const handleUpdate = () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      
+      debounceRef.current = setTimeout(() => {
+        queryClient.invalidateQueries({ 
+          queryKey: ['users-presence', sortedIds] 
+        });
+      }, 500); // 500ms debounce
+    };
+
+    // Use shared channel instead of creating new one
+    getSharedPresenceChannel(handleUpdate);
 
     return () => {
-      supabase.removeChannel(channel);
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      releaseSharedPresenceChannel(handleUpdate);
     };
-  }, [userIds.sort().join(','), queryClient]);
+  }, [sortedIds, queryClient]);
 
   const getPresence = useCallback((userId: string): { isOnline: boolean; status: PresenceStatus; lastSeen: string | null } => {
     const presence = presenceData.find(p => p.user_id === userId);
@@ -197,9 +235,9 @@ export const useUsersPresence = (userIds: string[]) => {
       return { isOnline: false, status: 'offline', lastSeen: null };
     }
 
-    // Consider offline if last seen more than 2 minutes ago
+    // Consider offline if last seen more than 3 minutes ago (was 2 minutes)
     const lastSeenDate = presence.last_seen_at ? new Date(presence.last_seen_at) : null;
-    const isRecent = lastSeenDate && (Date.now() - lastSeenDate.getTime()) < 120000;
+    const isRecent = lastSeenDate && (Date.now() - lastSeenDate.getTime()) < 180000;
     
     return {
       isOnline: presence.status === 'online' && isRecent,

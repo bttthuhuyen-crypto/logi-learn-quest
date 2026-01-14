@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { PostCard } from './PostCard';
 import { usePosts, useUserPostLikes, SortOption, Post } from '@/hooks/usePosts';
 import { useUserPostFollows } from '@/hooks/usePostFollows';
@@ -36,7 +36,44 @@ const PostSkeleton = () => (
   </div>
 );
 
-export const PostsList: React.FC<PostsListProps> = ({ 
+// Memoized wrapper with CSS content-visibility for virtualization
+interface VirtualizedPostCardProps {
+  post: Post;
+  isLiked: boolean;
+  isFollowing: boolean;
+  onOpenPost?: (postId: string) => void;
+  onCategoryClick?: (categoryId: string) => void;
+  onEditPost?: (post: Post) => void;
+}
+
+const VirtualizedPostCard = memo(({ 
+  post, 
+  isLiked, 
+  isFollowing, 
+  onOpenPost, 
+  onCategoryClick, 
+  onEditPost 
+}: VirtualizedPostCardProps) => (
+  <div 
+    style={{ 
+      contentVisibility: 'auto',
+      containIntrinsicSize: '0 400px', // Estimated height for smooth scrolling
+    }}
+  >
+    <PostCard
+      post={post}
+      isLiked={isLiked}
+      isFollowing={isFollowing}
+      onOpenPost={onOpenPost}
+      onCategoryClick={onCategoryClick}
+      onEditPost={onEditPost}
+    />
+  </div>
+));
+
+VirtualizedPostCard.displayName = 'VirtualizedPostCard';
+
+const PostsListComponent: React.FC<PostsListProps> = ({ 
   categoryId, 
   sort, 
   onOpenPost,
@@ -95,7 +132,7 @@ export const PostsList: React.FC<PostsListProps> = ({
   return (
     <div className="space-y-4">
       {regularPosts.map((post) => (
-        <PostCard
+        <VirtualizedPostCard
           key={post.id}
           post={post}
           isLiked={likedPostIds.includes(post.id)}
@@ -117,3 +154,6 @@ export const PostsList: React.FC<PostsListProps> = ({
     </div>
   );
 };
+
+// Memoize the entire PostsList component
+export const PostsList = memo(PostsListComponent);
