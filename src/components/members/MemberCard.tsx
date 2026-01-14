@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +44,7 @@ const getStatusColor = (status: string | null, lastSeenAt: string | null, showSt
   return null;
 };
 
-export const MemberCard: React.FC<MemberCardProps> = ({ member, viewMode }) => {
+const MemberCardComponent: React.FC<MemberCardProps> = ({ member, viewMode }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -74,7 +74,12 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, viewMode }) => {
         >
           <div className="relative shrink-0">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={member.avatar_url || undefined} alt={member.full_name || ''} />
+              <AvatarImage 
+                src={member.avatar_url || undefined} 
+                alt={member.full_name || ''} 
+                loading="lazy"
+                decoding="async"
+              />
               <AvatarFallback>{member.full_name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             {statusColor && (
@@ -160,7 +165,12 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, viewMode }) => {
         <div className="flex items-start gap-3">
           <div className="relative shrink-0">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={member.avatar_url || undefined} alt={member.full_name || ''} />
+              <AvatarImage 
+                src={member.avatar_url || undefined} 
+                alt={member.full_name || ''} 
+                loading="lazy"
+                decoding="async"
+              />
               <AvatarFallback>{member.full_name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             {statusColor && (
@@ -217,3 +227,15 @@ export const MemberCard: React.FC<MemberCardProps> = ({ member, viewMode }) => {
     </>
   );
 };
+
+// Memoize with custom comparison
+export const MemberCard = memo(MemberCardComponent, (prev, next) => {
+  return (
+    prev.member.user_id === next.member.user_id &&
+    prev.member.level === next.member.level &&
+    prev.member.points === next.member.points &&
+    prev.member.presence_status === next.member.presence_status &&
+    prev.member.last_seen_at === next.member.last_seen_at &&
+    prev.viewMode === next.viewMode
+  );
+});

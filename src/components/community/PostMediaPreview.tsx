@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PostMedia } from '@/hooks/usePosts';
@@ -8,7 +8,7 @@ interface PostMediaPreviewProps {
   onClick?: () => void;
 }
 
-export const PostMediaPreview: React.FC<PostMediaPreviewProps> = ({ media, onClick }) => {
+const PostMediaPreviewComponent: React.FC<PostMediaPreviewProps> = ({ media, onClick }) => {
   if (!media.length) return null;
 
   const images = media.filter(m => m.media_type === 'image' || m.media_type === 'gif');
@@ -35,6 +35,7 @@ export const PostMediaPreview: React.FC<PostMediaPreviewProps> = ({ media, onCli
               alt=""
               className="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
             />
             {img.media_type === 'gif' && (
               <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/70 text-white rounded">
@@ -65,6 +66,8 @@ export const PostMediaPreview: React.FC<PostMediaPreviewProps> = ({ media, onCli
             src={video.thumbnail_url}
             alt=""
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -97,6 +100,8 @@ export const PostMediaPreview: React.FC<PostMediaPreviewProps> = ({ media, onCli
               src={link.thumbnail_url}
               alt=""
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         )}
@@ -106,6 +111,8 @@ export const PostMediaPreview: React.FC<PostMediaPreviewProps> = ({ media, onCli
               src={`https://www.google.com/s2/favicons?domain=${new URL(link.media_url).hostname}&sz=16`}
               alt=""
               className="w-4 h-4"
+              loading="lazy"
+              decoding="async"
             />
             <span className="truncate">{new URL(link.media_url).hostname}</span>
           </div>
@@ -117,3 +124,5 @@ export const PostMediaPreview: React.FC<PostMediaPreviewProps> = ({ media, onCli
 
   return null;
 };
+
+export const PostMediaPreview = memo(PostMediaPreviewComponent);

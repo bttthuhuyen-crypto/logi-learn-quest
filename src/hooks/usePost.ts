@@ -1,10 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { subscribeToTable } from '@/lib/realtimeManager';
 import type { Post, PostMedia, Poll, PollOption } from './usePosts';
 
 export const usePost = (postId: string | undefined) => {
   const queryClient = useQueryClient();
+  const postIdRef = useRef(postId);
+  postIdRef.current = postId;
 
   const query = useQuery({
     queryKey: ['post', postId],
@@ -22,7 +25,6 @@ export const usePost = (postId: string | undefined) => {
         .single();
 
       if (postError || !post) {
-        console.error('Error fetching post:', postError);
         return null;
       }
 
@@ -109,23 +111,22 @@ export const usePost = (postId: string | undefined) => {
     enabled: !!postId,
   });
 
-  // Real-time subscription for post updates
+  // Real-time subscription using shared manager
   useEffect(() => {
     if (!postId) return;
 
-    const channel = supabase
-      .channel(`post-detail-${postId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'posts', filter: `id=eq.${postId}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['post', postId] });
-        }
-      )
-      .subscribe();
+    const handleUpdate = (payload: any) => {
+      // Client-side filter by postId
+      const record = payload.new || payload.old;
+      if (record?.id === postIdRef.current) {
+        queryClient.invalidateQueries({ queryKey: ['post', postIdRef.current] });
+      }
+    };
+
+    const unsubscribe = subscribeToTable('posts', handleUpdate);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [postId, queryClient]);
 

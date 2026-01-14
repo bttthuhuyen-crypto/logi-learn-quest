@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { cleanupAllChannels } from '@/lib/realtimeManager';
 
 interface Profile {
   id: string;
@@ -109,6 +110,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!session?.user) {
           if (previousUserId !== null) {
             previousUserIdRef.current = null;
+            // Cleanup all realtime channels on logout
+            cleanupAllChannels();
             setAuthState({
               session: null,
               user: null,
@@ -211,6 +214,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Cleanup all realtime channels before signout
+    cleanupAllChannels();
     await supabase.auth.signOut();
     // State will be updated by onAuthStateChange listener
   };

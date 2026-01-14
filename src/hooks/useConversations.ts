@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useRef } from 'react';
+import { subscribeToTable } from '@/lib/realtimeManager';
 
 export interface ConversationWithDetails {
   id: string;
@@ -25,7 +26,8 @@ export interface ConversationWithDetails {
 export const useConversations = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const userIdRef = useRef(user?.id);
+  userIdRef.current = user?.id;
 
   const { data: conversations = [], isLoading, error } = useQuery({
     queryKey: ['conversations', user?.id],
@@ -143,35 +145,18 @@ export const useConversations = () => {
     enabled: !!user?.id,
   });
 
-  // OPTIMIZED: Use ref to prevent multiple subscriptions
+  // OPTIMIZED: Use shared realtime manager
   useEffect(() => {
     if (!user?.id) return;
 
-    // Cleanup previous channel if exists
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', userIdRef.current] });
+    };
 
-    channelRef.current = supabase
-      .channel('conversations-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['conversations', user.id] });
-        }
-      )
-      .subscribe();
+    const unsubscribe = subscribeToTable('messages', handleUpdate);
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      unsubscribe();
     };
   }, [user?.id, queryClient]);
 

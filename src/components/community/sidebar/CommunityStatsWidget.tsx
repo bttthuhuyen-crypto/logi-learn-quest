@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import { BarChart3, Users, Activity, FileText } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { subscribeToTable } from '@/lib/realtimeManager';
 
-export const CommunityStatsWidget: React.FC = () => {
+const CommunityStatsWidgetComponent: React.FC = () => {
   const queryClient = useQueryClient();
   const { t, language } = useLanguage();
 
@@ -34,7 +35,7 @@ export const CommunityStatsWidget: React.FC = () => {
       if (error) throw error;
       return count || 0;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 60000, // Refetch every 60 seconds
   });
 
   // Fetch posts this week
@@ -51,21 +52,16 @@ export const CommunityStatsWidget: React.FC = () => {
     },
   });
 
-  // Subscribe to realtime presence changes
+  // Subscribe to realtime presence changes using shared manager
   useEffect(() => {
-    const channel = supabase
-      .channel('community-stats-presence')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'user_presence' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['community-stats-online'] });
-        }
-      )
-      .subscribe();
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['community-stats-online'] });
+    };
+
+    const unsubscribe = subscribeToTable('user_presence', handleUpdate);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [queryClient]);
 
@@ -130,3 +126,5 @@ export const CommunityStatsWidget: React.FC = () => {
     </div>
   );
 };
+
+export const CommunityStatsWidget = memo(CommunityStatsWidgetComponent);

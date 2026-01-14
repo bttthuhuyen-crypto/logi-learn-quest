@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { subscribeToTable } from '@/lib/realtimeManager';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export type SortOption = 'default' | 'new' | 'top_week' | 'top_month' | 'following';
@@ -84,7 +85,6 @@ const COMPLEX_UPDATE_FIELDS = new Set([
 export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly = false, followingOnly = false }: UsePostsOptions = {}) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pendingInvalidateRef = useRef<NodeJS.Timeout | null>(null);
   
   // Store queryClient in ref to avoid stale closure
@@ -233,12 +233,8 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
     }, 300);
   }, []); // Empty deps - stable reference
 
-  // OPTIMIZED: Use setQueryData for simple updates, invalidate only when needed
+  // OPTIMIZED: Use shared realtime manager instead of dedicated channel
   useEffect(() => {
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-
     const handleRealtimeChange = (
       payload: RealtimePostgresChangesPayload<{ [key: string]: any }>
     ) => {
@@ -293,35 +289,16 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
       }
     };
 
-    channelRef.current = supabase
-      .channel('posts-changes')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'posts' },
-        handleRealtimeChange
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'posts' },
-        handleRealtimeChange
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'posts' },
-        handleRealtimeChange
-      )
-      .subscribe();
+    // Use shared realtime manager
+    const unsubscribe = subscribeToTable('posts', handleRealtimeChange);
 
     return () => {
       if (pendingInvalidateRef.current) {
         clearTimeout(pendingInvalidateRef.current);
       }
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      unsubscribe();
     };
-  }, [debouncedInvalidate]); // Only debouncedInvalidate - filterRef handles dynamic values
+  }, [debouncedInvalidate]);
 
   return query;
 };

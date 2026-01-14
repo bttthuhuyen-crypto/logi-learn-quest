@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { subscribeToTable } from '@/lib/realtimeManager';
 
 type PresenceStatus = 'online' | 'away' | 'offline';
 
@@ -12,46 +12,6 @@ interface UserPresence {
   last_seen_at: string | null;
   show_online_status: boolean;
 }
-
-// Singleton shared channel for all presence subscriptions
-let sharedPresenceChannel: RealtimeChannel | null = null;
-let channelRefCount = 0;
-const channelCallbacks = new Set<() => void>();
-
-const getSharedPresenceChannel = (onUpdate: () => void): RealtimeChannel => {
-  channelCallbacks.add(onUpdate);
-  
-  if (!sharedPresenceChannel) {
-    sharedPresenceChannel = supabase
-      .channel('global-presence-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_presence',
-        },
-        () => {
-          // Broadcast to all registered callbacks
-          channelCallbacks.forEach(cb => cb());
-        }
-      )
-      .subscribe();
-  }
-  
-  channelRefCount++;
-  return sharedPresenceChannel;
-};
-
-const releaseSharedPresenceChannel = (onUpdate: () => void) => {
-  channelCallbacks.delete(onUpdate);
-  channelRefCount--;
-  
-  if (channelRefCount === 0 && sharedPresenceChannel) {
-    supabase.removeChannel(sharedPresenceChannel);
-    sharedPresenceChannel = null;
-  }
-};
 
 export const useUserPresence = () => {
   const { user } = useAuth();
@@ -152,12 +112,12 @@ export const useUserPresence = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Heartbeat to keep online status fresh
+    // Heartbeat to keep online status fresh - every 2 minutes
     const heartbeat = setInterval(() => {
       if (document.visibilityState === 'visible') {
         updatePresence.mutate('online');
       }
-    }, 120000); // Every 2 minutes (was 1 minute)
+    }, 120000);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -197,7 +157,7 @@ export const useUsersPresence = (userIds: string[]) => {
       return data as UserPresence[];
     },
     enabled: userIds.length > 0,
-    refetchInterval: 60000, // Refetch every 60 seconds (was 30s)
+    refetchInterval: 60000, // Exactly 60 seconds
   });
 
   // Subscribe to shared realtime presence channel
@@ -217,14 +177,14 @@ export const useUsersPresence = (userIds: string[]) => {
       }, 500); // 500ms debounce
     };
 
-    // Use shared channel instead of creating new one
-    getSharedPresenceChannel(handleUpdate);
+    // Use shared realtime manager
+    const unsubscribe = subscribeToTable('user_presence', handleUpdate);
 
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
-      releaseSharedPresenceChannel(handleUpdate);
+      unsubscribe();
     };
   }, [sortedIds, queryClient]);
 
@@ -235,7 +195,7 @@ export const useUsersPresence = (userIds: string[]) => {
       return { isOnline: false, status: 'offline', lastSeen: null };
     }
 
-    // Consider offline if last seen more than 3 minutes ago (was 2 minutes)
+    // Consider offline if last seen more than 3 minutes ago
     const lastSeenDate = presence.last_seen_at ? new Date(presence.last_seen_at) : null;
     const isRecent = lastSeenDate && (Date.now() - lastSeenDate.getTime()) < 180000;
     

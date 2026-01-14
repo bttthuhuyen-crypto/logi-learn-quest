@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { subscribeToTable } from '@/lib/realtimeManager';
 
 export type CommentSortOption = 'newest' | 'oldest' | 'top';
 
@@ -31,6 +32,8 @@ interface UseCommentsOptions {
 
 export const useComments = ({ postId, sort = 'newest', limit = 20 }: UseCommentsOptions) => {
   const queryClient = useQueryClient();
+  const postIdRef = useRef(postId);
+  postIdRef.current = postId;
 
   const query = useQuery({
     queryKey: ['comments', postId, sort],
@@ -112,26 +115,20 @@ export const useComments = ({ postId, sort = 'newest', limit = 20 }: UseComments
     enabled: !!postId,
   });
 
-  // Real-time subscription
+  // Real-time subscription using shared manager
   useEffect(() => {
-    const channel = supabase
-      .channel(`comments-${postId}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'comments',
-          filter: `post_id=eq.${postId}`
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['comments', postId] });
-        }
-      )
-      .subscribe();
+    const handleUpdate = (payload: any) => {
+      // Client-side filter by postId
+      const record = payload.new || payload.old;
+      if (record?.post_id === postIdRef.current) {
+        queryClient.invalidateQueries({ queryKey: ['comments', postIdRef.current] });
+      }
+    };
+
+    const unsubscribe = subscribeToTable('comments', handleUpdate);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [postId, queryClient]);
 
