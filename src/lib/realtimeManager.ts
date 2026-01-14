@@ -2,6 +2,9 @@
  * Centralized Realtime Channel Manager
  * Uses a SINGLE master channel for all database subscriptions
  * to eliminate channel proliferation and ensure consistent cleanup
+ * 
+ * CRITICAL: This implements a state machine to prevent re-subscribing
+ * when the channel is already subscribing or subscribed.
  */
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -22,9 +25,12 @@ interface TableSubscription {
   callbacks: Set<(payload: any) => void>;
 }
 
+// State machine for channel lifecycle
+type ChannelStatus = 'idle' | 'subscribing' | 'subscribed';
+
 // SINGLETON: One master channel for the entire application
 let masterChannel: RealtimeChannel | null = null;
-let isSubscribed = false;
+let channelStatus: ChannelStatus = 'idle';
 const tableSubscriptions = new Map<TableName, TableSubscription>();
 
 // Broadcast payload to all callbacks for a specific table
@@ -34,7 +40,7 @@ const broadcastToTable = (table: TableName, payload: any) => {
     subscription.callbacks.forEach(cb => {
       try {
         cb(payload);
-      } catch (error) {
+      } catch {
         // Silently handle callback errors to prevent breaking other subscribers
       }
     });
@@ -42,8 +48,20 @@ const broadcastToTable = (table: TableName, payload: any) => {
 };
 
 // Initialize the master channel with all table subscriptions
+// IDEMPOTENT: Will only create and subscribe once
 const initMasterChannel = () => {
-  if (masterChannel && isSubscribed) return;
+  // Guard: If channel already exists (regardless of status), do nothing
+  if (masterChannel !== null) {
+    return;
+  }
+  
+  // Guard: If we're already in the process of subscribing, do nothing
+  if (channelStatus === 'subscribing') {
+    return;
+  }
+  
+  // Mark as subscribing before creating channel
+  channelStatus = 'subscribing';
   
   masterChannel = supabase
     .channel('master-realtime-channel', {
@@ -62,13 +80,23 @@ const initMasterChannel = () => {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, (payload) => broadcastToTable('post_likes', payload))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'post_follows' }, (payload) => broadcastToTable('post_follows', payload))
     .subscribe((status) => {
-      isSubscribed = status === 'SUBSCRIBED';
+      if (status === 'SUBSCRIBED') {
+        channelStatus = 'subscribed';
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        // Reset state on error/close so we can retry
+        channelStatus = 'idle';
+        masterChannel = null;
+      }
     });
 };
 
 /**
  * Subscribe to a table's realtime updates
  * All subscriptions share the same master channel
+ * 
+ * CRITICAL: This function is idempotent - calling it multiple times
+ * with the same callback will only add the callback once, and
+ * will NOT create new channels or re-subscribe.
  * 
  * @param table - The table name to subscribe to
  * @param callback - Callback function when changes occur
@@ -78,7 +106,7 @@ export const subscribeToTable = (
   table: TableName,
   callback: (payload: any) => void
 ): (() => void) => {
-  // Ensure master channel is initialized
+  // Ensure master channel is initialized (idempotent)
   initMasterChannel();
   
   // Get or create subscription for this table
@@ -112,8 +140,8 @@ export const cleanupAllChannels = () => {
   if (masterChannel) {
     supabase.removeChannel(masterChannel);
     masterChannel = null;
-    isSubscribed = false;
   }
+  channelStatus = 'idle';
   tableSubscriptions.clear();
 };
 
@@ -131,4 +159,9 @@ export const getActiveSubscriptionCount = (): number => {
 /**
  * Check if master channel is active
  */
-export const isChannelActive = (): boolean => isSubscribed;
+export const isChannelActive = (): boolean => channelStatus === 'subscribed';
+
+/**
+ * Get current channel status (for debugging)
+ */
+export const getChannelStatus = (): ChannelStatus => channelStatus;

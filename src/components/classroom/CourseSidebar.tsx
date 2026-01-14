@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +47,7 @@ interface CourseSidebarProps {
   onDeleteCourse: () => void;
 }
 
-export const CourseSidebar: React.FC<CourseSidebarProps> = ({
+const CourseSidebarComponent: React.FC<CourseSidebarProps> = ({
   course,
   sections,
   selectedLesson,
@@ -93,16 +93,16 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
     }
   };
 
-  const toggleSection = (sectionId: string) => {
+  const toggleSection = useCallback((sectionId: string) => {
     setExpandedSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
-  };
+  }, []);
 
-  const handleAddLesson = (sectionId: string) => {
+  const handleAddLesson = useCallback((sectionId: string) => {
     setActiveSectionId(sectionId);
     setAddLessonOpen(true);
-  };
+  }, []);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!deleteConfirm) return;
     if (deleteConfirm.type === 'section') {
       await onDeleteSection(deleteConfirm.id);
@@ -110,7 +110,7 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
       await onDeleteLesson(deleteConfirm.id);
     }
     setDeleteConfirm(null);
-  };
+  }, [deleteConfirm, onDeleteSection, onDeleteLesson]);
 
   return (
     <div className="w-80 border-r bg-card overflow-y-auto h-full">
@@ -256,6 +256,8 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
                               src={lesson.thumbnail_url}
                               alt=""
                               className="w-12 h-8 object-cover rounded"
+                              loading="lazy"
+                              decoding="async"
                             />
                           ) : (
                             <div className="w-12 h-8 bg-muted rounded flex items-center justify-center">
@@ -359,3 +361,13 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
     </div>
   );
 };
+
+export const CourseSidebar = memo(CourseSidebarComponent, (prev, next) => {
+  return (
+    prev.course.id === next.course.id &&
+    prev.course.title === next.course.title &&
+    prev.course.is_published === next.course.is_published &&
+    prev.sections === next.sections &&
+    prev.selectedLesson?.id === next.selectedLesson?.id
+  );
+});
