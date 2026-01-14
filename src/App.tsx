@@ -59,8 +59,8 @@ const PageLoader = () => (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30 * 1000, // 30 seconds - data considered fresh
-      gcTime: 5 * 60 * 1000, // 5 minutes - garbage collection time
+      staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
+      gcTime: 10 * 60 * 1000, // 10 minutes - garbage collection time (>= staleTime)
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
       retry: 1, // Only retry once on failure
       refetchOnMount: false, // Don't refetch on component mount if data exists
