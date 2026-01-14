@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { LevelBadge } from "@/components/community/LevelBadge";
 import { StatusDot } from "./StatusDot";
 import { DeleteLocationDialog } from "./DeleteLocationDialog";
 import { ChangeLocationModal } from "./ChangeLocationModal";
-import { useLanguage } from "@/i18n/LanguageContext";
 import { useFollow } from "@/hooks/useUserFollows";
 import { useMyLocation } from "@/hooks/useMyLocation";
 import { useAuth } from "@/contexts/AuthContext";
 import { MessageCircle, UserPlus, UserCheck, User, RefreshCw, Trash2, MapPin } from "lucide-react";
+
 
 export interface MemberPopupData {
   userId: string;
@@ -26,23 +25,25 @@ export interface MemberPopupData {
 interface MemberPopupContentProps {
   member: MemberPopupData;
   isCurrentUser?: boolean;
+  language: 'vi' | 'en';
+  onNavigate: (path: string) => void;
 }
 
 export const MemberPopupContent = ({ 
   member, 
   isCurrentUser = false,
+  language,
+  onNavigate,
 }: MemberPopupContentProps) => {
-  const { language } = useLanguage();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { deleteLocation } = useMyLocation();
   const { isFollowing, toggle: toggleFollow, isLoading: isFollowLoading } = useFollow(member.userId);
-  
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showChangeModal, setShowChangeModal] = useState(false);
 
   const handleChat = () => {
-    navigate(`/messenger?user=${member.userId}`);
+    onNavigate(`/messenger?user=${member.userId}`);
   };
 
   const handleFollow = () => {
@@ -50,7 +51,7 @@ export const MemberPopupContent = ({
   };
 
   const handleViewProfile = () => {
-    navigate(`/members/${member.userId}`);
+    onNavigate(`/members/${member.userId}`);
   };
 
   const handleDeleteLocation = () => {
