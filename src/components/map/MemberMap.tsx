@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
@@ -6,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { useUserLocations, UserLocation } from "@/hooks/useUserLocations";
 import { useMyLocation } from "@/hooks/useMyLocation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { MemberPopupContent, MemberPopupData } from "./MemberPopupContent";
 import { ClusterPopupContent } from "./ClusterPopupContent";
 import { MapControls } from "./MapControls";
@@ -141,9 +143,13 @@ interface MemberMapProps {
 const ClusterPopupHandler = ({
   clusterPopup,
   setClusterPopup,
+  language,
+  onNavigate,
 }: {
   clusterPopup: ClusterPopupState | null;
   setClusterPopup: (popup: ClusterPopupState | null) => void;
+  language: 'vi' | 'en';
+  onNavigate: (path: string) => void;
 }) => {
   const map = useMap();
 
@@ -159,6 +165,11 @@ const ClusterPopupHandler = ({
     setClusterPopup(null);
     map.flyTo([member.latitude, member.longitude], 16);
   }, [map, setClusterPopup]);
+
+  const handleChatClick = useCallback((userId: string) => {
+    setClusterPopup(null);
+    onNavigate(`/messenger?user=${userId}`);
+  }, [setClusterPopup, onNavigate]);
 
   if (!clusterPopup) return null;
 
@@ -176,8 +187,10 @@ const ClusterPopupHandler = ({
         members={clusterPopup.members}
         totalCount={clusterPopup.members.length}
         locationName={getClusterLocationName(clusterPopup.members)}
+        language={language}
         onViewAll={handleViewAll}
         onMemberClick={handleMemberClick}
+        onChatClick={handleChatClick}
       />
     </Popup>
   );
@@ -185,10 +198,16 @@ const ClusterPopupHandler = ({
 
 export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps) => {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const navigate = useNavigate();
   const { data: locations, isLoading } = useUserLocations();
   const { myLocation } = useMyLocation();
   const [selectedMember, setSelectedMember] = useState<UserLocation | null>(null);
   const [clusterPopup, setClusterPopup] = useState<ClusterPopupState | null>(null);
+
+  const handleNavigate = useCallback((path: string) => {
+    navigate(path);
+  }, [navigate]);
 
   // Default center (Vietnam)
   const defaultCenter: [number, number] = [16.0, 108.0];
@@ -283,6 +302,8 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
       <ClusterPopupHandler
         clusterPopup={clusterPopup}
         setClusterPopup={setClusterPopup}
+        language={language}
+        onNavigate={handleNavigate}
       />
 
       {/* Your location marker */}
