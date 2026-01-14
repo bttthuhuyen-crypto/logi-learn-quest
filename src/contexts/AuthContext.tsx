@@ -13,6 +13,13 @@ interface Profile {
   preferred_language: string;
 }
 
+interface AuthState {
+  user: User | null;
+  session: Session | null;
+  profile: Profile | null;
+  loading: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -27,82 +34,125 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Pure data fetcher - returns profile data without setting state
+const fetchProfileData = async (userId: string): Promise<Profile | null> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (!error && data) {
+    return data as Profile;
+  }
+  return null;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  
+  // Consolidated state for minimal re-renders
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    session: null,
+    profile: null,
+    loading: true,
+  });
+
   // Track previous user ID to avoid unnecessary profile fetches
   const previousUserIdRef = useRef<string | null>(null);
-
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (!error && data) {
-      setProfile(data as Profile);
-    }
-  };
+  // Track initialization to prevent duplicate processing
+  const initializedRef = useRef(false);
 
   useEffect(() => {
+    // Initialize auth state
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        let initialProfile: Profile | null = null;
+        if (session?.user) {
+          previousUserIdRef.current = session.user.id;
+          initialProfile = await fetchProfileData(session.user.id);
+        }
+
+        // Single batched state update - profile is ready when loading becomes false
+        setAuthState({
+          session,
+          user: session?.user ?? null,
+          profile: initialProfile,
+          loading: false,
+        });
+
+        initializedRef.current = true;
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('[Auth] Initialization error:', error);
+        }
+        setAuthState(prev => ({ ...prev, loading: false }));
+        initializedRef.current = true;
+      }
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // Debug logging (minimal in production)
+      async (event, session) => {
+        // Skip if not initialized - getSession will handle initial state
+        if (!initializedRef.current) return;
+
         if (import.meta.env.DEV) {
           console.log('[Auth State] Event:', event);
         }
 
-        setSession(session);
-        setUser(session?.user ?? null);
+        const newUserId = session?.user?.id ?? null;
+        const previousUserId = previousUserIdRef.current;
 
-        // Only fetch profile when user actually changes (not on token refresh)
-        if (session?.user) {
-          const userId = session.user.id;
-          
-          // Skip fetch if same user (e.g., TOKEN_REFRESHED event)
-          if (userId !== previousUserIdRef.current) {
-            previousUserIdRef.current = userId;
-            // Defer profile fetch to avoid Supabase client deadlock
-            setTimeout(() => {
-              fetchProfile(userId);
-            }, 0);
-          }
-        } else {
-          // User signed out
-          if (previousUserIdRef.current !== null) {
+        // User signed out
+        if (!session?.user) {
+          if (previousUserId !== null) {
             previousUserIdRef.current = null;
-            setProfile(null);
+            setAuthState({
+              session: null,
+              user: null,
+              profile: null,
+              loading: false,
+            });
           }
+          return;
         }
-        setLoading(false);
+
+        // User changed (new sign in)
+        if (newUserId !== previousUserId) {
+          previousUserIdRef.current = newUserId;
+          
+          // Fetch profile for new user
+          const profile = await fetchProfileData(newUserId);
+          
+          setAuthState({
+            session,
+            user: session.user,
+            profile,
+            loading: false,
+          });
+          return;
+        }
+
+        // Same user, just token refresh - only update session/user
+        setAuthState(prev => ({
+          ...prev,
+          session,
+          user: session.user,
+        }));
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const userId = session.user.id;
-        if (userId !== previousUserIdRef.current) {
-          previousUserIdRef.current = userId;
-          fetchProfile(userId);
-        }
-      }
-      setLoading(false);
-    });
+    // THEN initialize
+    initializeAuth();
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -128,17 +178,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      console.log('=== GOOGLE SIGN IN DEBUG ===');
-      console.log('Starting Google OAuth...');
-      
-      const currentOrigin = window.location.origin;
-      console.log('Current origin:', currentOrigin);
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      
+      if (import.meta.env.DEV) {
+        console.log('=== GOOGLE SIGN IN DEBUG ===');
+        console.log('Starting Google OAuth...');
+        console.log('Current origin:', window.location.origin);
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${currentOrigin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -146,7 +195,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
 
-      console.log('OAuth response:', { data, error });
+      if (import.meta.env.DEV) {
+        console.log('OAuth response:', { data, error });
+      }
 
       if (error) {
         console.error('Google sign in error:', error);
@@ -161,22 +212,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setProfile(null);
+    // State will be updated by onAuthStateChange listener
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
+    if (authState.user) {
+      const profile = await fetchProfileData(authState.user.id);
+      setAuthState(prev => ({ ...prev, profile }));
     }
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        session,
-        profile,
-        loading,
+        user: authState.user,
+        session: authState.session,
+        profile: authState.profile,
+        loading: authState.loading,
         signUp,
         signIn,
         signInWithGoogle,
