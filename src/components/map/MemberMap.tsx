@@ -292,6 +292,8 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
               <MemberPopupContent 
                 member={convertToPopupData(location)}
                 isCurrentUser={false}
+                language={language}
+                onNavigate={handleNavigate}
               />
             </Popup>
           </Marker>
@@ -325,6 +327,8 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
                   null,
               }}
               isCurrentUser={true}
+              language={language}
+              onNavigate={handleNavigate}
             />
           </Popup>
         </Marker>
