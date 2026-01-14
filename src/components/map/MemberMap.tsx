@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
@@ -20,26 +20,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Custom member marker with avatar and online status
-const createMemberIcon = (avatarUrl?: string | null, isOnline?: boolean) => {
-  const onlineRing = isOnline ? 'ring-2 ring-green-500 ring-offset-1' : '';
-  return L.divIcon({
-    className: "member-marker",
-    html: `
-      <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg border-2 border-white ${onlineRing}">
-        ${avatarUrl 
-          ? `<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" />`
-          : `<span class="text-sm text-primary-foreground font-bold">👤</span>`
-        }
-      </div>
-    `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40],
-  });
-};
-
-// Your location marker (yellow/gold)
+// Your location marker (yellow/gold) - static, defined at module level
 const yourLocationIcon = L.divIcon({
   className: "your-location-marker",
   html: `
@@ -57,7 +38,7 @@ const yourLocationIcon = L.divIcon({
   popupAnchor: [0, -56],
 });
 
-// Custom cluster icon
+// Custom cluster icon - static function at module level
 const createClusterCustomIcon = (cluster: any) => {
   const count = cluster.getChildCount();
   let size = "small";
@@ -98,7 +79,7 @@ const MapEvents = ({ onLocationFound, flyToLocation }: MapEventsProps) => {
   return null;
 };
 
-// Helper to convert UserLocation to MemberPopupData
+// Helper to convert UserLocation to MemberPopupData - pure function
 const convertToPopupData = (location: UserLocation): MemberPopupData => ({
   userId: location.userId,
   fullName: location.fullName,
@@ -110,7 +91,7 @@ const convertToPopupData = (location: UserLocation): MemberPopupData => ({
   displayName: location.displayName,
 });
 
-// Get common location name from cluster members
+// Get common location name from cluster members - pure function
 const getClusterLocationName = (members: UserLocation[]): string | undefined => {
   const cities = members.map(m => m.city).filter(Boolean);
   const uniqueCities = [...new Set(cities)];
@@ -205,6 +186,37 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
   const [selectedMember, setSelectedMember] = useState<UserLocation | null>(null);
   const [clusterPopup, setClusterPopup] = useState<ClusterPopupState | null>(null);
 
+  // Icon cache to prevent recreating icons on every render
+  const iconCache = useRef<Map<string, L.DivIcon>>(new Map());
+
+  // Memoized icon creator with caching
+  const createMemberIcon = useCallback((avatarUrl?: string | null, isOnline?: boolean) => {
+    const cacheKey = `${avatarUrl || 'default'}-${isOnline ? '1' : '0'}`;
+    
+    if (iconCache.current.has(cacheKey)) {
+      return iconCache.current.get(cacheKey)!;
+    }
+    
+    const onlineRing = isOnline ? 'ring-2 ring-green-500 ring-offset-1' : '';
+    const icon = L.divIcon({
+      className: "member-marker",
+      html: `
+        <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg border-2 border-white ${onlineRing}">
+          ${avatarUrl 
+            ? `<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" />`
+            : `<span class="text-sm text-primary-foreground font-bold">👤</span>`
+          }
+        </div>
+      `,
+      iconSize: [40, 40],
+      iconAnchor: [20, 40],
+      popupAnchor: [0, -40],
+    });
+    
+    iconCache.current.set(cacheKey, icon);
+    return icon;
+  }, []);
+
   const handleNavigate = useCallback((path: string) => {
     navigate(path);
   }, [navigate]);
@@ -213,16 +225,22 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
   const defaultCenter: [number, number] = [16.0, 108.0];
   const defaultZoom = 5;
 
-  // Create memoized markers (excluding current user - shown separately)
-  const memberMarkers = useMemo(() => {
+  // Check if data is ready for rendering
+  const isDataReady = !isLoading && !!locations;
+
+  // Step 1: Filter locations (stable reference when user.id doesn't change)
+  const filteredLocations = useMemo(() => {
     if (!locations) return [];
-    return locations
-      .filter(location => location.userId !== user?.id)
-      .map((location) => ({
-        ...location,
-        icon: createMemberIcon(location.avatarUrl, location.isOnline),
-      }));
+    return locations.filter(location => location.userId !== user?.id);
   }, [locations, user?.id]);
+
+  // Step 2: Create markers with cached icons (only recomputes when filteredLocations changes)
+  const memberMarkers = useMemo(() => {
+    return filteredLocations.map((location) => ({
+      ...location,
+      icon: createMemberIcon(location.avatarUrl, location.isOnline),
+    }));
+  }, [filteredLocations, createMemberIcon]);
 
   // Handle cluster click
   const handleClusterClick = useCallback((e: L.LeafletMouseEvent) => {
@@ -268,7 +286,10 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
 
       {/* Clustered member markers */}
       <MarkerClusterGroup
-        chunkedLoading
+        chunkedLoading={true}
+        chunkDelay={50}
+        chunkInterval={200}
+        removeOutsideVisibleBounds={true}
         maxClusterRadius={50}
         iconCreateFunction={createClusterCustomIcon}
         showCoverageOnHover={false}
@@ -277,7 +298,7 @@ export const MemberMap = ({ flyToLocation, onUserLocationFound }: MemberMapProps
         zoomToBoundsOnClick={false}
         onClick={handleClusterClick}
       >
-        {memberMarkers.map((location) => (
+        {isDataReady && memberMarkers.length > 0 && memberMarkers.map((location) => (
           <Marker
             key={location.id}
             position={[location.latitude, location.longitude]}
