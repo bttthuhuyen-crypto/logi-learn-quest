@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, X, Shield, MessageCircle, Inbox } from 'lucide-react';
+import { Search, Menu, X, Shield, MessageCircle } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   { key: 'about', path: '/about' },
 ];
 
-export const Header = () => {
+const HeaderComponent = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -159,3 +159,6 @@ export const Header = () => {
     </header>
   );
 };
+
+// Memoize the entire Header component to prevent unnecessary re-renders
+export const Header = memo(HeaderComponent);

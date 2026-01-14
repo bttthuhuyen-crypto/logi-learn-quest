@@ -17,8 +17,8 @@ interface PresenceContextType {
 const PresenceContext = createContext<PresenceContextType | null>(null);
 
 const AWAY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
-const HEARTBEAT_INTERVAL = 2 * 60 * 1000; // 2 minutes (was 30s) - reduced frequency
-const ACTIVITY_THROTTLE = 60 * 1000; // 60 seconds (was 30s) - less frequent updates
+const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 minutes (was 2 minutes) - reduced frequency
+const ACTIVITY_THROTTLE = 2 * 60 * 1000; // 2 minutes (was 60s) - less frequent updates
 
 export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -161,7 +161,7 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       );
     };
 
-    // OPTIMIZED: Reduced activity events - removed mousemove (too frequent)
+    // OPTIMIZED: Reduced activity events - only essential ones
     const activityEvents = ['mousedown', 'keydown', 'touchstart'];
     activityEvents.forEach(event => {
       window.addEventListener(event, handleActivity, { passive: true });
@@ -173,7 +173,7 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Before unload
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Start heartbeat with longer interval
+    // Start heartbeat with longer interval (5 minutes)
     heartbeatRef.current = setInterval(() => {
       if (document.visibilityState === 'visible') {
         updatePresenceInDb('online');

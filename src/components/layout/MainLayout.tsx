@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, memo, useMemo } from 'react';
 import { Header } from './Header';
 
 export interface MainLayoutProps {
@@ -6,13 +6,20 @@ export interface MainLayoutProps {
   hideHeader?: boolean;
 }
 
-export const MainLayout = ({ children, hideHeader = false }: MainLayoutProps) => {
-  // Presence is now tracked by PresenceProvider in App.tsx
+const MainLayoutComponent = ({ children, hideHeader = false }: MainLayoutProps) => {
+  // Memoize header to prevent re-renders when children change
+  const header = useMemo(() => {
+    if (hideHeader) return null;
+    return <Header />;
+  }, [hideHeader]);
 
   return (
     <div className="min-h-screen bg-background">
-      {!hideHeader && <Header />}
+      {header}
       <main>{children}</main>
     </div>
   );
 };
+
+// Memoize MainLayout to prevent unnecessary re-renders
+export const MainLayout = memo(MainLayoutComponent);
