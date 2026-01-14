@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export type SortOption = 'default' | 'new' | 'top_week' | 'top_month' | 'following';
@@ -72,6 +72,7 @@ interface UsePostsOptions {
 export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly = false, followingOnly = false }: UsePostsOptions = {}) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const query = useQuery({
     queryKey: ['posts', categoryId, sort, pinnedOnly, followingOnly, user?.id],
@@ -92,7 +93,7 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
         }
       }
 
-      let query = supabase
+      let postsQuery = supabase
         .from('posts')
         .select(`
           *,
@@ -100,96 +101,96 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
         `);
 
       if (categoryId) {
-        query = query.eq('category_id', categoryId);
+        postsQuery = postsQuery.eq('category_id', categoryId);
       }
 
       if (pinnedOnly) {
-        query = query.eq('is_pinned', true);
+        postsQuery = postsQuery.eq('is_pinned', true);
       }
 
       // Filter by following users
       if (followingOnly && followingIds.length > 0) {
-        query = query.in('author_id', followingIds);
+        postsQuery = postsQuery.in('author_id', followingIds);
       }
 
       // Apply sorting
       switch (sort) {
         case 'new':
         case 'following':
-          query = query.order('created_at', { ascending: false });
+          postsQuery = postsQuery.order('created_at', { ascending: false });
           break;
         case 'top_week':
           const weekAgo = new Date();
           weekAgo.setDate(weekAgo.getDate() - 7);
-          query = query
+          postsQuery = postsQuery
             .gte('created_at', weekAgo.toISOString())
             .order('like_count', { ascending: false });
           break;
         case 'top_month':
           const monthAgo = new Date();
           monthAgo.setMonth(monthAgo.getMonth() - 1);
-          query = query
+          postsQuery = postsQuery
             .gte('created_at', monthAgo.toISOString())
             .order('like_count', { ascending: false });
           break;
         default:
-          query = query
+          postsQuery = postsQuery
             .order('is_pinned', { ascending: false })
             .order('last_activity_at', { ascending: false });
       }
 
-      query = query.limit(limit);
+      postsQuery = postsQuery.limit(limit);
 
-      const { data, error } = await query;
+      const { data, error } = await postsQuery;
       if (error) throw error;
 
-      // Fetch author profiles with level
+      // Early return for empty data
+      if (!data || data.length === 0) return [];
+
+      // Collect IDs for batch fetching
       const authorIds = [...new Set(data.map((post: any) => post.author_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, avatar_url, level')
-        .in('user_id', authorIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-      // Fetch media for all posts
       const postIds = data.map((post: any) => post.id);
-      const { data: mediaData } = await supabase
-        .from('post_media')
-        .select('*')
-        .in('post_id', postIds)
-        .order('order_index');
+      const pollPostIds = data.filter((p: any) => p.content_type === 'poll').map((p: any) => p.id);
+
+      // OPTIMIZED: Parallel fetch profiles, media, and polls
+      const [profilesResult, mediaResult, pollsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('user_id, full_name, avatar_url, level')
+          .in('user_id', authorIds),
+        supabase
+          .from('post_media')
+          .select('*')
+          .in('post_id', postIds)
+          .order('order_index'),
+        pollPostIds.length > 0
+          ? supabase
+              .from('polls')
+              .select(`*, options:poll_options(*)`)
+              .in('post_id', pollPostIds)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      // Build lookup maps
+      const profileMap = new Map(profilesResult.data?.map(p => [p.user_id, p]) || []);
 
       const mediaMap = new Map<string, PostMedia[]>();
-      mediaData?.forEach((m: any) => {
+      mediaResult.data?.forEach((m: any) => {
         if (!mediaMap.has(m.post_id)) {
           mediaMap.set(m.post_id, []);
         }
         mediaMap.get(m.post_id)!.push(m);
       });
 
-      // Fetch polls for poll posts
-      const pollPostIds = data.filter((p: any) => p.content_type === 'poll').map((p: any) => p.id);
-      let pollMap = new Map<string, Poll>();
-
-      if (pollPostIds.length > 0) {
-        const { data: pollsData } = await supabase
-          .from('polls')
-          .select(`
-            *,
-            options:poll_options(*)
-          `)
-          .in('post_id', pollPostIds);
-
-        pollsData?.forEach((poll: any) => {
-          const totalVotes = poll.options?.reduce((sum: number, opt: any) => sum + opt.vote_count, 0) || 0;
-          pollMap.set(poll.post_id, {
-            ...poll,
-            options: poll.options?.sort((a: any, b: any) => a.order_index - b.order_index) || [],
-            total_votes: totalVotes,
-          });
+      const pollMap = new Map<string, Poll>();
+      pollsResult.data?.forEach((poll: any) => {
+        const totalVotes = poll.options?.reduce((sum: number, opt: any) => sum + opt.vote_count, 0) || 0;
+        pollMap.set(poll.post_id, {
+          ...poll,
+          options: poll.options?.sort((a: any, b: any) => a.order_index - b.order_index) || [],
+          total_votes: totalVotes,
         });
-      }
+      });
 
       return data.map((post: any) => ({
         ...post,
@@ -200,8 +201,14 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
     },
   });
 
+  // OPTIMIZED: Use ref to prevent multiple subscriptions
   useEffect(() => {
-    const channel = supabase
+    // Cleanup previous channel if exists
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
+    channelRef.current = supabase
       .channel('posts-changes')
       .on(
         'postgres_changes',
@@ -211,7 +218,10 @@ export const usePosts = ({ categoryId, sort = 'default', limit = 20, pinnedOnly 
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [queryClient]);
 
