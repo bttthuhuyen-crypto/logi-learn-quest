@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -6,6 +6,8 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { PostSelectionModal } from '@/components/community/PostSelectionModal';
+import { useLanguage } from '@/i18n/LanguageContext';
 import {
   Bold,
   Italic,
@@ -13,6 +15,7 @@ import {
   List,
   ListOrdered,
   Link as LinkIcon,
+  MessageSquare,
 } from 'lucide-react';
 
 interface PostRichTextEditorProps {
@@ -26,6 +29,9 @@ export const PostRichTextEditor: React.FC<PostRichTextEditorProps> = ({
   onChange,
   placeholder = 'Chia sẻ suy nghĩ của bạn...',
 }) => {
+  const { language } = useLanguage();
+  const [postModalOpen, setPostModalOpen] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -51,9 +57,7 @@ export const PostRichTextEditor: React.FC<PostRichTextEditorProps> = ({
   // Update editor content when content prop changes from outside
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      // Only update if the content is different to avoid cursor jumping
       const currentContent = editor.getHTML();
-      // Check if content is empty or different
       if (content === '' && currentContent !== '<p></p>') {
         editor.commands.setContent('');
       } else if (content && content !== currentContent && content !== '<p></p>') {
@@ -63,20 +67,26 @@ export const PostRichTextEditor: React.FC<PostRichTextEditorProps> = ({
   }, [content, editor]);
 
   const addLink = useCallback(() => {
-    const url = window.prompt('Nhập URL:');
+    const url = window.prompt(language === 'vi' ? 'Nhập URL:' : 'Enter URL:');
     if (url && editor) {
       if (editor.state.selection.empty) {
-        // If no text selected, insert link with URL as text
         editor.chain().focus().insertContent(`<a href="${url}">${url}</a>`).run();
       } else {
         editor.chain().focus().setLink({ href: url }).run();
       }
     }
-  }, [editor]);
+  }, [editor, language]);
 
   const removeLink = useCallback(() => {
     if (editor) {
       editor.chain().focus().unsetLink().run();
+    }
+  }, [editor]);
+
+  const addCommunityLink = useCallback((postId: string, postTitle: string) => {
+    if (editor) {
+      const linkHtml = `<a href="/community/post/${postId}" target="_blank">${postTitle}</a>`;
+      editor.chain().focus().insertContent(linkHtml).run();
     }
   }, [editor]);
 
@@ -143,8 +153,19 @@ export const PostRichTextEditor: React.FC<PostRichTextEditorProps> = ({
           size="icon"
           className={`h-7 w-7 ${editor.isActive('link') ? 'bg-muted text-foreground' : 'text-muted-foreground'}`}
           onClick={editor.isActive('link') ? removeLink : addLink}
+          title={language === 'vi' ? 'Chèn liên kết' : 'Insert link'}
         >
           <LinkIcon className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={`h-7 w-7 text-muted-foreground hover:text-foreground`}
+          onClick={() => setPostModalOpen(true)}
+          title={language === 'vi' ? 'Link bài viết cộng đồng' : 'Link community post'}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
         </Button>
       </div>
 
@@ -152,6 +173,13 @@ export const PostRichTextEditor: React.FC<PostRichTextEditorProps> = ({
       <EditorContent
         editor={editor}
         className="prose prose-sm max-w-none p-3 min-h-[120px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[100px] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none"
+      />
+
+      {/* Post Selection Modal */}
+      <PostSelectionModal
+        open={postModalOpen}
+        onOpenChange={setPostModalOpen}
+        onSelectPost={addCommunityLink}
       />
     </div>
   );
