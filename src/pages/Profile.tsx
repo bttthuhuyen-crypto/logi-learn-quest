@@ -16,15 +16,11 @@ import { toast } from 'sonner';
 import { 
   Camera, 
   Loader2, 
-  User, 
-  Mail, 
   Star, 
   Save,
   X,
   Settings,
-  Activity as ActivityIcon,
-  FileText,
-  MessageSquare,
+  Award,
 } from 'lucide-react';
 import { MyProgressCard } from '@/components/leaderboard/MyProgressCard';
 import { BadgesCard } from '@/components/gamification/BadgesCard';
@@ -185,9 +181,9 @@ const Profile = () => {
 
   return (
     <MainLayout>
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 p-4 md:p-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 p-4 md:p-8">
         {/* Left Column: Profile Info & Tabs (8 columns) */}
-        <div className="md:col-span-8 space-y-6">
+        <div className="lg:col-span-8 space-y-8">
           {/* Profile Header Card */}
           <Card>
             <CardContent className="pt-6">
@@ -309,65 +305,43 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Tabs Section */}
+          {/* Tabs Section - Skool Style */}
           <Tabs defaultValue="activity" className="w-full">
-            <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 gap-0">
-              <TabsTrigger 
-                value="activity" 
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 py-3 data-[state=active]:bg-transparent"
-              >
-                <ActivityIcon className="h-4 w-4 mr-2" />
-                {language === 'vi' ? 'Hoạt động' : 'Activity'}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="posts"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 py-3 data-[state=active]:bg-transparent"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                {language === 'vi' ? 'Bài viết' : 'Posts'}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="comments"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 py-3 data-[state=active]:bg-transparent"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                {language === 'vi' ? 'Bình luận' : 'Comments'}
-              </TabsTrigger>
+            <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0 gap-8">
+              {["activity", "posts", "comments"].map((tab) => (
+                <TabsTrigger 
+                  key={tab}
+                  value={tab}
+                  className="border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none px-0 pb-3 pt-0 capitalize text-muted-foreground data-[state=active]:text-foreground font-medium"
+                >
+                  {tab === 'activity' ? (language === 'vi' ? 'Hoạt động' : 'Activity') : 
+                   tab === 'posts' ? (language === 'vi' ? 'Bài viết' : 'Posts') : 
+                   (language === 'vi' ? 'Bình luận' : 'Comments')}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
-            <TabsContent value="activity" className="mt-4">
-              <Card>
-                <CardContent className="pt-4">
-                  <MemberActivityFeed 
-                    activities={activities}
-                    isLoading={isActivitiesLoading}
-                    hasMore={hasNextPage}
-                    onLoadMore={() => fetchNextPage()}
-                  />
-                </CardContent>
-              </Card>
+            <TabsContent value="activity" className="mt-6">
+              <MemberActivityFeed 
+                activities={activities}
+                isLoading={isActivitiesLoading}
+                hasMore={hasNextPage}
+                onLoadMore={() => fetchNextPage()}
+              />
             </TabsContent>
 
-            <TabsContent value="posts" className="mt-4">
-              <Card>
-                <CardContent className="pt-4">
-                  <MemberPostsTab userId={user.id} />
-                </CardContent>
-              </Card>
+            <TabsContent value="posts" className="mt-6">
+              <MemberPostsTab userId={user.id} />
             </TabsContent>
 
-            <TabsContent value="comments" className="mt-4">
-              <Card>
-                <CardContent className="pt-4">
-                  <MemberCommentsTab userId={user.id} />
-                </CardContent>
-              </Card>
+            <TabsContent value="comments" className="mt-6">
+              <MemberCommentsTab userId={user.id} />
             </TabsContent>
           </Tabs>
         </div>
 
-        {/* Right Column: Gamification (4 columns) */}
-        <div className="md:col-span-4 space-y-6">
+        {/* Right Column: Gamification (4 columns) - LINH HỒN CỦA SKOOL */}
+        <div className="lg:col-span-4 space-y-6">
           {/* My Progress Card - Compact */}
           <MyProgressCard 
             progress={myProgress} 
@@ -375,24 +349,33 @@ const Profile = () => {
             variant="compact"
           />
 
-          {/* Badges Card */}
-          <BadgesCard currentLevel={profile?.level || 1} />
-
-          {/* Activity Heatmap */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <ActivityIcon className="h-4 w-4" />
-                {language === 'vi' ? 'Lịch hoạt động' : 'Activity Calendar'}
+          {/* Badges Card - Custom Title */}
+          <Card className="shadow-sm border-muted">
+            <CardHeader className="pb-3 px-5 pt-5">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Award className="h-4 w-4" />
+                {language === 'vi' ? 'Huy hiệu Logistics đạt được' : 'Logistics Badges Earned'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ActivityHeatmap activities={heatmapData || []} isLoading={isHeatmapLoading} />
+            <CardContent className="px-5 pb-5">
+              <div className="grid grid-cols-4 gap-3">
+                {Array.from({ length: Math.min(profile?.level || 1, 8) }, (_, i) => (
+                  <LevelBadge key={i + 1} level={i + 1} size="md" />
+                ))}
+              </div>
+              {(!profile?.level || profile.level === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {language === 'vi' ? 'Chưa có huy hiệu nào' : 'No badges yet'}
+                </p>
+              )}
             </CardContent>
           </Card>
 
+          {/* Activity Heatmap */}
+          <ActivityHeatmap activities={heatmapData || []} isLoading={isHeatmapLoading} />
+
           {/* Account Info - Mobile settings button */}
-          <Card className="sm:hidden">
+          <Card className="lg:hidden">
             <CardContent className="pt-4">
               <Button 
                 variant="outline" 
