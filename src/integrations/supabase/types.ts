@@ -548,6 +548,8 @@ export type Database = {
             | null
           content: string | null
           created_at: string
+          description: string | null
+          discussion_post_id: string | null
           duration_seconds: number | null
           id: string
           is_published: boolean | null
@@ -565,6 +567,8 @@ export type Database = {
             | null
           content?: string | null
           created_at?: string
+          description?: string | null
+          discussion_post_id?: string | null
           duration_seconds?: number | null
           id?: string
           is_published?: boolean | null
@@ -582,6 +586,8 @@ export type Database = {
             | null
           content?: string | null
           created_at?: string
+          description?: string | null
+          discussion_post_id?: string | null
           duration_seconds?: number | null
           id?: string
           is_published?: boolean | null
@@ -594,6 +600,13 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "course_lessons_discussion_post_id_fkey"
+            columns: ["discussion_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "course_lessons_section_id_fkey"
             columns: ["section_id"]

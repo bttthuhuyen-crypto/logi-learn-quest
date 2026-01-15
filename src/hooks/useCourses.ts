@@ -31,6 +31,7 @@ export interface CourseLesson {
   id: string;
   section_id: string;
   title: string;
+  description: string | null;
   content: string | null;
   thumbnail_url: string | null;
   video_url: string | null;
@@ -39,6 +40,7 @@ export interface CourseLesson {
   is_published: boolean;
   duration_seconds: number;
   order_index: number;
+  discussion_post_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -259,9 +261,11 @@ export const useCourseDetail = (courseId: string | undefined) => {
       .insert({
         section_id: sectionId,
         title: lesson.title,
+        description: lesson.description || null,
         access_level: lesson.access_level || 'member',
         required_level: lesson.required_level || 1,
         thumbnail_url: lesson.thumbnail_url,
+        discussion_post_id: lesson.discussion_post_id || null,
         order_index: lessonCount
       })
       .select()
