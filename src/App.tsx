@@ -19,6 +19,8 @@ const Admin = lazy(() => import("./pages/Admin"));
 const MembershipRequestsPage = lazy(() => import("./pages/MembershipRequestsPage"));
 const Classroom = lazy(() => import("./pages/Classroom"));
 const CourseEditor = lazy(() => import("./pages/CourseEditor"));
+const CourseViewer = lazy(() => import("./pages/CourseViewer"));
+const LessonView = lazy(() => import("./pages/LessonView"));
 const Community = lazy(() => import("./pages/Community"));
 const PostDetail = lazy(() => import("./pages/PostDetail"));
 const Calendar = lazy(() => import("./pages/Calendar"));
@@ -89,7 +91,8 @@ const App = () => (
                       <Route path="/admin/membership-requests" element={<ProtectedAdminRoute><MembershipRequestsPage /></ProtectedAdminRoute>} />
                       <Route path="/classroom" element={<Classroom />} />
                       <Route path="/classroom/edit/:id" element={<ProtectedAdminRoute><CourseEditor /></ProtectedAdminRoute>} />
-                      <Route path="/classroom/:id" element={<CourseEditor />} />
+                      <Route path="/classroom/:courseId" element={<CourseViewer />} />
+                      <Route path="/classroom/:courseId/lesson/:lessonId" element={<LessonView />} />
                       <Route path="/community" element={<Community />} />
                       <Route path="/community/post/:postId" element={<PostDetail />} />
                       <Route path="/calendar" element={<Calendar />} />
