@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
+import { PostMention } from '@/components/editor/PostMention';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { PostSelectionModal } from '@/components/community/PostSelectionModal';
@@ -47,6 +48,7 @@ export const PostRichTextEditor: React.FC<PostRichTextEditorProps> = ({
       Placeholder.configure({
         placeholder,
       }),
+      PostMention,
     ],
     content,
     onUpdate: ({ editor }) => {

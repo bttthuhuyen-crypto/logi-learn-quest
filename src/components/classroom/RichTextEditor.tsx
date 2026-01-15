@@ -6,6 +6,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
+import { PostMention } from '@/components/editor/PostMention';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -63,7 +64,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph']
-      })
+      }),
+      PostMention,
     ],
     content,
     onUpdate: ({ editor }) => {
