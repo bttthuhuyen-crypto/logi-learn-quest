@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -9,6 +9,7 @@ import Underline from '@tiptap/extension-underline';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { PostSelectionModal } from '@/components/community/PostSelectionModal';
 import {
   Bold,
   Italic,
@@ -24,7 +25,8 @@ import {
   Heading1,
   Heading2,
   Undo,
-  Redo
+  Redo,
+  MessageSquare
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -39,6 +41,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder
 }) => {
   const { language } = useLanguage();
+  const [postModalOpen, setPostModalOpen] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -81,6 +84,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       editor.chain().focus().setLink({ href: url }).run();
     }
   }, [editor, language]);
+
+  const addCommunityLink = useCallback((postId: string, postTitle: string) => {
+    if (editor) {
+      const linkHtml = `<a href="/community/post/${postId}" target="_blank">${postTitle}</a>`;
+      editor.chain().focus().insertContent(linkHtml).run();
+    }
+  }, [editor]);
 
   if (!editor) return null;
 
@@ -217,6 +227,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           className="h-8 w-8"
           onClick={addLink}
           data-active={editor.isActive('link')}
+          title={language === 'vi' ? 'Chèn liên kết' : 'Insert link'}
         >
           <LinkIcon className="h-4 w-4" />
         </Button>
@@ -225,7 +236,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           variant="ghost"
           size="icon"
           className="h-8 w-8"
+          onClick={() => setPostModalOpen(true)}
+          title={language === 'vi' ? 'Link bài viết cộng đồng' : 'Link community post'}
+        >
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
           onClick={addImage}
+          title={language === 'vi' ? 'Chèn hình ảnh' : 'Insert image'}
         >
           <ImageIcon className="h-4 w-4" />
         </Button>
@@ -258,6 +280,13 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <EditorContent
         editor={editor}
         className="prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[200px] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none"
+      />
+
+      {/* Post Selection Modal */}
+      <PostSelectionModal
+        open={postModalOpen}
+        onOpenChange={setPostModalOpen}
+        onSelectPost={addCommunityLink}
       />
     </div>
   );
