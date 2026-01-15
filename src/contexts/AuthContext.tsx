@@ -60,6 +60,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Track previous user ID to avoid unnecessary profile fetches
   const previousUserIdRef = useRef<string | null>(null);
+  // Track previous token to prevent re-renders on TOKEN_REFRESHED with same token
+  const previousTokenRef = useRef<string | null>(null);
   // Track initialization to prevent duplicate processing
   const initializedRef = useRef(false);
 
@@ -72,6 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         let initialProfile: Profile | null = null;
         if (session?.user) {
           previousUserIdRef.current = session.user.id;
+          previousTokenRef.current = session.access_token;
           initialProfile = await fetchProfileData(session.user.id);
         }
 
@@ -99,17 +102,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Skip if not initialized - getSession will handle initial state
         if (!initializedRef.current) return;
 
-        if (import.meta.env.DEV) {
-          console.log('[Auth State] Event:', event);
-        }
-
         const newUserId = session?.user?.id ?? null;
         const previousUserId = previousUserIdRef.current;
+        const currentToken = session?.access_token ?? null;
+        const previousToken = previousTokenRef.current;
+
+        // NO-OP guard: skip if same user AND same token (prevents redundant re-renders)
+        if (newUserId === previousUserId && currentToken === previousToken && session?.user) {
+          return;
+        }
 
         // User signed out
         if (!session?.user) {
           if (previousUserId !== null) {
             previousUserIdRef.current = null;
+            previousTokenRef.current = null;
             // Cleanup all realtime channels on logout
             cleanupAllChannels();
             setAuthState({
@@ -121,6 +128,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           return;
         }
+
+        // Update token ref
+        previousTokenRef.current = currentToken;
 
         // User changed (new sign in)
         if (newUserId !== previousUserId) {
@@ -138,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        // Same user, just token refresh - only update session/user
+        // Same user, token refresh - only update session/user (minimal re-render)
         setAuthState(prev => ({
           ...prev,
           session,

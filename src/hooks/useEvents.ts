@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+
 export type EventStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 export type EventRsvpStatus = 'going' | 'maybe' | 'not_going';
 export type EventLocationType = 'skool_call' | 'skool_webinar' | 'zoom' | 'google_meet' | 'in_person' | 'other';
@@ -28,7 +29,6 @@ export interface Event {
   recurrence_day_of_week?: number | null;
   parent_event_id?: string | null;
   created_at: string;
-  // Joined data
   creator?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -49,18 +49,41 @@ export interface EventAttendee {
   } | null;
 }
 
-// Helper to get creator info separately
-const fetchCreatorInfo = async (creatorId: string | null) => {
-  if (!creatorId) return null;
-  const { data } = await supabase
-    .from('profiles')
-    .select('full_name, avatar_url')
-    .eq('user_id', creatorId)
-    .maybeSingle();
-  return data;
+// Helper to fetch user RSVPs in batch
+const fetchUserRsvps = async (userId: string, eventIds: string[]): Promise<Record<string, EventRsvpStatus>> => {
+  if (eventIds.length === 0) return {};
+  
+  const { data: rsvps } = await supabase
+    .from('event_attendees')
+    .select('event_id, status')
+    .eq('user_id', userId)
+    .in('event_id', eventIds);
+  
+  const rsvpMap: Record<string, EventRsvpStatus> = {};
+  rsvps?.forEach(r => {
+    rsvpMap[r.event_id] = r.status as EventRsvpStatus;
+  });
+  return rsvpMap;
 };
 
-// Fetch live events
+// Helper to fetch creator profiles in batch
+const fetchCreatorProfiles = async (creatorIds: string[]): Promise<Record<string, { full_name: string | null; avatar_url: string | null }>> => {
+  const uniqueIds = [...new Set(creatorIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return {};
+  
+  const { data } = await supabase
+    .from('profiles')
+    .select('user_id, full_name, avatar_url')
+    .in('user_id', uniqueIds);
+  
+  const profileMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
+  data?.forEach(p => {
+    profileMap[p.user_id] = { full_name: p.full_name, avatar_url: p.avatar_url };
+  });
+  return profileMap;
+};
+
+// Fetch live events - NO polling, rely on realtime
 export const useLiveEvents = () => {
   const { user } = useAuth();
 
@@ -79,38 +102,26 @@ export const useLiveEvents = () => {
         .order('start_time', { ascending: true });
 
       if (error) throw error;
-      if (!data) return [];
+      if (!data || data.length === 0) return [];
 
-      // Get user RSVPs if logged in
-      let rsvpMap: Record<string, EventRsvpStatus> = {};
-      if (user && data.length > 0) {
-        const { data: rsvps } = await supabase
-          .from('event_attendees')
-          .select('event_id, status')
-          .eq('user_id', user.id)
-          .in('event_id', data.map(e => e.id));
-        
-        rsvps?.forEach(r => {
-          rsvpMap[r.event_id] = r.status as EventRsvpStatus;
-        });
-      }
+      // Batch fetch RSVPs and creators in parallel
+      const [rsvpMap, creatorMap] = await Promise.all([
+        user ? fetchUserRsvps(user.id, data.map(e => e.id)) : Promise.resolve({}),
+        fetchCreatorProfiles(data.map(e => e.creator_id).filter(Boolean) as string[])
+      ]);
 
-      // Fetch creator info for each event
-      const eventsWithCreators = await Promise.all(
-        data.map(async (event) => ({
-          ...event,
-          creator: await fetchCreatorInfo(event.creator_id),
-          user_rsvp: rsvpMap[event.id] || null
-        }))
-      );
-
-      return eventsWithCreators as Event[];
+      return data.map(event => ({
+        ...event,
+        creator: event.creator_id ? creatorMap[event.creator_id] || null : null,
+        user_rsvp: rsvpMap[event.id] || null
+      })) as Event[];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds for live status
+    // DISABLED polling - rely on realtime instead
+    refetchInterval: false,
   });
 };
 
-// Fetch upcoming events
+// Fetch upcoming events - NO polling
 export const useUpcomingEvents = (limit?: number) => {
   const { user } = useAuth();
 
@@ -135,37 +146,25 @@ export const useUpcomingEvents = (limit?: number) => {
 
       const { data, error } = await query;
       if (error) throw error;
-      if (!data) return [];
+      if (!data || data.length === 0) return [];
 
-      // Get user RSVPs if logged in
-      let rsvpMap: Record<string, EventRsvpStatus> = {};
-      if (user && data.length > 0) {
-        const { data: rsvps } = await supabase
-          .from('event_attendees')
-          .select('event_id, status')
-          .eq('user_id', user.id)
-          .in('event_id', data.map(e => e.id));
-        
-        rsvps?.forEach(r => {
-          rsvpMap[r.event_id] = r.status as EventRsvpStatus;
-        });
-      }
+      // Batch fetch RSVPs and creators in parallel
+      const [rsvpMap, creatorMap] = await Promise.all([
+        user ? fetchUserRsvps(user.id, data.map(e => e.id)) : Promise.resolve({}),
+        fetchCreatorProfiles(data.map(e => e.creator_id).filter(Boolean) as string[])
+      ]);
 
-      // Fetch creator info for each event
-      const eventsWithCreators = await Promise.all(
-        data.map(async (event) => ({
-          ...event,
-          creator: await fetchCreatorInfo(event.creator_id),
-          user_rsvp: rsvpMap[event.id] || null
-        }))
-      );
-
-      return eventsWithCreators as Event[];
+      return data.map(event => ({
+        ...event,
+        creator: event.creator_id ? creatorMap[event.creator_id] || null : null,
+        user_rsvp: rsvpMap[event.id] || null
+      })) as Event[];
     },
+    refetchInterval: false,
   });
 };
 
-// Fetch past events (last 30 days)
+// Fetch past events - NO polling
 export const usePastEvents = () => {
   const { user } = useAuth();
 
@@ -186,50 +185,35 @@ export const usePastEvents = () => {
         .order('start_time', { ascending: false });
 
       if (error) throw error;
-      if (!data) return [];
+      if (!data || data.length === 0) return [];
 
-      // Get user RSVPs if logged in
-      let rsvpMap: Record<string, EventRsvpStatus> = {};
-      if (user && data.length > 0) {
-        const { data: rsvps } = await supabase
-          .from('event_attendees')
-          .select('event_id, status')
-          .eq('user_id', user.id)
-          .in('event_id', data.map(e => e.id));
-        
-        rsvps?.forEach(r => {
-          rsvpMap[r.event_id] = r.status as EventRsvpStatus;
-        });
-      }
+      // Batch fetch RSVPs and creators in parallel
+      const [rsvpMap, creatorMap] = await Promise.all([
+        user ? fetchUserRsvps(user.id, data.map(e => e.id)) : Promise.resolve({}),
+        fetchCreatorProfiles(data.map(e => e.creator_id).filter(Boolean) as string[])
+      ]);
 
-      // Fetch creator info for each event
-      const eventsWithCreators = await Promise.all(
-        data.map(async (event) => ({
-          ...event,
-          creator: await fetchCreatorInfo(event.creator_id),
-          user_rsvp: rsvpMap[event.id] || null
-        }))
-      );
-
-      return eventsWithCreators as Event[];
+      return data.map(event => ({
+        ...event,
+        creator: event.creator_id ? creatorMap[event.creator_id] || null : null,
+        user_rsvp: rsvpMap[event.id] || null
+      })) as Event[];
     },
+    refetchInterval: false,
   });
 };
 
-// Fetch events for a specific month (includes visible grid range)
+// Fetch events for a specific month
 export const useMonthEvents = (year: number, month: number) => {
   return useQuery({
     queryKey: ['events', 'month', year, month],
     queryFn: async () => {
-      // Calculate the full grid range (from start of first week to end of last week)
       const monthStart = new Date(year, month, 1);
       const monthEnd = new Date(year, month + 1, 0);
       
-      // Get the Sunday of the week containing the first day of the month
       const gridStart = new Date(monthStart);
       gridStart.setDate(monthStart.getDate() - monthStart.getDay());
       
-      // Get the Saturday of the week containing the last day of the month
       const gridEnd = new Date(monthEnd);
       gridEnd.setDate(monthEnd.getDate() + (6 - monthEnd.getDay()));
 
@@ -248,10 +232,11 @@ export const useMonthEvents = (year: number, month: number) => {
       if (error) throw error;
       return (data || []) as Pick<Event, 'id' | 'title' | 'start_date' | 'start_time' | 'status' | 'location_type'>[];
     },
+    refetchInterval: false,
   });
 };
 
-// Fetch events for banner: live or within next 24 hours
+// Fetch events for banner - NO polling
 export const useBannerEvents = () => {
   return useQuery({
     queryKey: ['events', 'banner'],
@@ -260,12 +245,10 @@ export const useBannerEvents = () => {
       const currentDate = now.toISOString().split('T')[0];
       const currentTime = now.toTimeString().slice(0, 8);
       
-      // Calculate 24 hours from now
       const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
       const futureDate = in24Hours.toISOString().split('T')[0];
       const futureTime = in24Hours.toTimeString().slice(0, 8);
 
-      // Query for live events or scheduled events within 24 hours
       const { data, error } = await supabase
         .from('events')
         .select('id, title, start_date, start_time, duration_minutes, status, location_type, location_url, attendee_count')
@@ -276,7 +259,7 @@ export const useBannerEvents = () => {
           `and(start_date.eq.${futureDate},start_time.lte.${futureTime}),` +
           `and(start_date.gt.${currentDate},start_date.lt.${futureDate})`
         )
-        .order('status', { ascending: false }) // 'live' comes before 'scheduled'
+        .order('status', { ascending: false })
         .order('start_date', { ascending: true })
         .order('start_time', { ascending: true })
         .limit(5);
@@ -284,7 +267,8 @@ export const useBannerEvents = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 60000, // Auto-refresh every minute
+    // DISABLED polling - rely on realtime
+    refetchInterval: false,
     staleTime: 30000,
   });
 };
@@ -299,7 +283,6 @@ export const useEventRsvp = () => {
       if (!user) throw new Error('Must be logged in');
 
       if (status === null) {
-        // Remove RSVP
         const { error } = await supabase
           .from('event_attendees')
           .delete()
@@ -307,7 +290,6 @@ export const useEventRsvp = () => {
           .eq('user_id', user.id);
         if (error) throw error;
       } else {
-        // Upsert RSVP
         const { error } = await supabase
           .from('event_attendees')
           .upsert({
@@ -327,18 +309,17 @@ export const useEventRsvp = () => {
         description: 'Trạng thái tham gia đã được lưu',
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: 'Lỗi',
         description: 'Không thể cập nhật trạng thái. Vui lòng thử lại.',
         variant: 'destructive',
       });
-      console.error('RSVP error:', error);
     },
   });
 };
 
-// Get event attendees
+// Get event attendees - batch profile fetch
 export const useEventAttendees = (eventId: string) => {
   return useQuery({
     queryKey: ['event-attendees', eventId],
@@ -351,27 +332,18 @@ export const useEventAttendees = (eventId: string) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      if (!data) return [];
+      if (!data || data.length === 0) return [];
 
-      // Fetch profile info for each attendee
-      const attendeesWithProfiles = await Promise.all(
-        data.map(async (attendee) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('user_id', attendee.user_id)
-            .maybeSingle();
-          
-          return {
-            ...attendee,
-            profile
-          };
-        })
-      );
+      // Batch fetch all profiles at once
+      const profileMap = await fetchCreatorProfiles(data.map(a => a.user_id));
 
-      return attendeesWithProfiles as EventAttendee[];
+      return data.map(attendee => ({
+        ...attendee,
+        profile: profileMap[attendee.user_id] || null
+      })) as EventAttendee[];
     },
     enabled: !!eventId,
+    refetchInterval: false,
   });
 };
 
@@ -392,32 +364,32 @@ export const useEvent = (eventId: string | undefined) => {
 
       if (error) throw error;
       
-      // Fetch creator info
-      const creator = await fetchCreatorInfo(data.creator_id);
-      
-      // Fetch user RSVP
-      let userRsvp = null;
-      if (user) {
-        const { data: rsvp } = await supabase
-          .from('event_attendees')
-          .select('status')
-          .eq('event_id', eventId)
-          .eq('user_id', user.id)
-          .maybeSingle();
-        userRsvp = rsvp?.status || null;
-      }
+      // Fetch creator and RSVP in parallel
+      const [creatorMap, userRsvp] = await Promise.all([
+        data.creator_id ? fetchCreatorProfiles([data.creator_id]) : Promise.resolve({}),
+        user ? (async () => {
+          const { data: rsvp } = await supabase
+            .from('event_attendees')
+            .select('status')
+            .eq('event_id', eventId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          return rsvp?.status || null;
+        })() : Promise.resolve(null)
+      ]);
 
       return {
         ...data,
-        creator,
+        creator: data.creator_id ? creatorMap[data.creator_id] || null : null,
         user_rsvp: userRsvp,
       } as Event;
     },
     enabled: !!eventId,
+    refetchInterval: false,
   });
 };
 
-// Fetch related events (recurring series)
+// Fetch related events
 export const useRelatedEvents = (parentEventId: string | null | undefined) => {
   return useQuery({
     queryKey: ['related-events', parentEventId],
@@ -437,6 +409,7 @@ export const useRelatedEvents = (parentEventId: string | null | undefined) => {
       return data || [];
     },
     enabled: !!parentEventId,
+    refetchInterval: false,
   });
 };
 
@@ -459,13 +432,12 @@ export const useDeleteEvent = () => {
         description: 'Sự kiện đã được xóa thành công',
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: 'Lỗi',
         description: 'Không thể xóa sự kiện. Vui lòng thử lại.',
         variant: 'destructive',
       });
-      console.error('Delete event error:', error);
     },
   });
 };
@@ -500,49 +472,52 @@ export const useCreateEvent = () => {
     mutationFn: async (eventData: EventFormData) => {
       if (!user) throw new Error('Must be logged in');
 
-      const startDateTime = new Date(`${format(eventData.start_date, 'yyyy-MM-dd')}T${eventData.start_time}`);
+      const startAt = new Date(`${format(eventData.start_date, 'yyyy-MM-dd')}T${eventData.start_time}`);
+      const endAt = new Date(startAt.getTime() + eventData.duration * 60000);
+
+      const eventPayload = {
+        title: eventData.title,
+        description: eventData.description || null,
+        cover_image_url: eventData.cover_image_url || null,
+        start_date: format(eventData.start_date, 'yyyy-MM-dd'),
+        start_time: eventData.start_time,
+        start_at: startAt.toISOString(),
+        end_at: endAt.toISOString(),
+        duration_minutes: eventData.duration,
+        timezone: eventData.timezone,
+        location_type: eventData.location_type,
+        location_url: eventData.location_url || null,
+        location_address: eventData.location_address || null,
+        is_recurring: eventData.is_recurring,
+        recurrence_pattern: eventData.is_recurring ? eventData.recurrence_pattern : null,
+        recurrence_day_of_week: eventData.is_recurring ? eventData.recurrence_day_of_week : null,
+        recurrence_end_date: eventData.is_recurring && eventData.recurrence_end_type === 'on_date' && eventData.recurrence_end_date 
+          ? format(eventData.recurrence_end_date, 'yyyy-MM-dd') 
+          : null,
+        recurrence_end_type: eventData.is_recurring ? eventData.recurrence_end_type : null,
+        recurrence_occurrences: eventData.is_recurring && eventData.recurrence_end_type === 'after_occurrences' 
+          ? eventData.recurrence_occurrences 
+          : null,
+        creator_id: user.id,
+        status: 'scheduled' as const,
+      };
 
       const { data, error } = await supabase
         .from('events')
-        .insert({
-          title: eventData.title,
-          description: eventData.description || null,
-          cover_image_url: eventData.cover_image_url || null,
-          start_at: startDateTime.toISOString(),
-          start_date: format(eventData.start_date, 'yyyy-MM-dd'),
-          start_time: eventData.start_time + ':00',
-          duration_minutes: eventData.duration,
-          timezone: eventData.timezone,
-          location_type: eventData.location_type,
-          location_url: eventData.location_url || null,
-          location_address: eventData.location_address || null,
-          is_recurring: eventData.is_recurring,
-          recurrence_pattern: eventData.is_recurring ? eventData.recurrence_pattern : null,
-          recurrence_day_of_week: eventData.recurrence_day_of_week ?? null,
-          recurrence_end_type: eventData.recurrence_end_type || null,
-          recurrence_end_date: eventData.recurrence_end_date 
-            ? format(eventData.recurrence_end_date, 'yyyy-MM-dd') 
-            : null,
-          recurrence_occurrences: eventData.recurrence_occurrences || null,
-          creator_id: user.id,
-          status: 'scheduled',
-        })
+        .insert(eventPayload)
         .select()
         .single();
 
       if (error) throw error;
 
-      // Send event notification if requested
-      if (eventData.send_notification && data.id) {
+      // Send notification if requested
+      if (eventData.send_notification && data) {
         try {
-          const { error: notifError } = await supabase.functions.invoke('send-event-notification', {
-            body: { event_id: data.id },
+          await supabase.functions.invoke('send-event-notification', {
+            body: { eventId: data.id }
           });
-          if (notifError) {
-            console.error('Error sending event notification:', notifError);
-          }
-        } catch (notifError) {
-          console.error('Error invoking send-event-notification:', notifError);
+        } catch {
+          // Silently fail notification
         }
       }
 
@@ -551,17 +526,16 @@ export const useCreateEvent = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       toast({
-        title: 'Thành công',
-        description: 'Sự kiện đã được tạo',
+        title: 'Đã tạo sự kiện',
+        description: 'Sự kiện mới đã được tạo thành công',
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: 'Lỗi',
         description: 'Không thể tạo sự kiện. Vui lòng thử lại.',
         variant: 'destructive',
       });
-      console.error('Create event error:', error);
     },
   });
 };
@@ -571,61 +545,55 @@ export const useUpdateEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ eventId, data }: { eventId: string; data: Partial<EventFormData> }) => {
-      const updateData: Record<string, unknown> = {};
+    mutationFn: async ({ eventId, eventData }: { eventId: string; eventData: Partial<EventFormData> }) => {
+      const updatePayload: Record<string, unknown> = {};
+
+      if (eventData.title !== undefined) updatePayload.title = eventData.title;
+      if (eventData.description !== undefined) updatePayload.description = eventData.description;
+      if (eventData.cover_image_url !== undefined) updatePayload.cover_image_url = eventData.cover_image_url;
       
-      if (data.title !== undefined) updateData.title = data.title;
-      if (data.description !== undefined) updateData.description = data.description || null;
-      if (data.cover_image_url !== undefined) updateData.cover_image_url = data.cover_image_url || null;
-      if (data.timezone !== undefined) updateData.timezone = data.timezone;
-      if (data.location_type !== undefined) updateData.location_type = data.location_type;
-      if (data.location_url !== undefined) updateData.location_url = data.location_url || null;
-      if (data.location_address !== undefined) updateData.location_address = data.location_address || null;
-      if (data.is_recurring !== undefined) updateData.is_recurring = data.is_recurring;
-      if (data.recurrence_pattern !== undefined) updateData.recurrence_pattern = data.recurrence_pattern;
-      if (data.recurrence_day_of_week !== undefined) updateData.recurrence_day_of_week = data.recurrence_day_of_week;
-      if (data.recurrence_end_type !== undefined) updateData.recurrence_end_type = data.recurrence_end_type;
-      if (data.recurrence_occurrences !== undefined) updateData.recurrence_occurrences = data.recurrence_occurrences;
+      if (eventData.start_date !== undefined) {
+        updatePayload.start_date = format(eventData.start_date, 'yyyy-MM-dd');
+      }
+      if (eventData.start_time !== undefined) updatePayload.start_time = eventData.start_time;
+      if (eventData.duration !== undefined) updatePayload.duration_minutes = eventData.duration;
+      if (eventData.timezone !== undefined) updatePayload.timezone = eventData.timezone;
       
-      if (data.start_date && data.start_time) {
-        const startDateTime = new Date(`${format(data.start_date, 'yyyy-MM-dd')}T${data.start_time}`);
-        updateData.start_at = startDateTime.toISOString();
-        updateData.start_date = format(data.start_date, 'yyyy-MM-dd');
-        updateData.start_time = data.start_time + ':00';
+      if (eventData.start_date && eventData.start_time && eventData.duration) {
+        const startAt = new Date(`${format(eventData.start_date, 'yyyy-MM-dd')}T${eventData.start_time}`);
+        const endAt = new Date(startAt.getTime() + eventData.duration * 60000);
+        updatePayload.start_at = startAt.toISOString();
+        updatePayload.end_at = endAt.toISOString();
       }
 
-      if (data.duration !== undefined) {
-        updateData.duration_minutes = data.duration;
-      }
+      if (eventData.location_type !== undefined) updatePayload.location_type = eventData.location_type;
+      if (eventData.location_url !== undefined) updatePayload.location_url = eventData.location_url;
+      if (eventData.location_address !== undefined) updatePayload.location_address = eventData.location_address;
 
-      if (data.recurrence_end_date !== undefined) {
-        updateData.recurrence_end_date = data.recurrence_end_date 
-          ? format(data.recurrence_end_date, 'yyyy-MM-dd') 
-          : null;
-      }
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('events')
-        .update(updateData)
-        .eq('id', eventId);
+        .update(updatePayload)
+        .eq('id', eventId)
+        .select()
+        .single();
 
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, { eventId }) => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      queryClient.invalidateQueries({ queryKey: ['event'] });
+      queryClient.invalidateQueries({ queryKey: ['event', eventId] });
       toast({
-        title: 'Thành công',
-        description: 'Sự kiện đã được cập nhật',
+        title: 'Đã cập nhật',
+        description: 'Sự kiện đã được cập nhật thành công',
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: 'Lỗi',
         description: 'Không thể cập nhật sự kiện. Vui lòng thử lại.',
         variant: 'destructive',
       });
-      console.error('Update event error:', error);
     },
   });
 };

@@ -17,24 +17,31 @@ interface PresenceContextType {
 const PresenceContext = createContext<PresenceContextType | null>(null);
 
 const AWAY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
-const HEARTBEAT_INTERVAL = 5 * 60 * 1000; // 5 minutes (was 2 minutes) - reduced frequency
-const ACTIVITY_THROTTLE = 2 * 60 * 1000; // 2 minutes (was 60s) - less frequent updates
+const HEARTBEAT_INTERVAL = 60 * 1000; // 60 seconds (reduced from 5 min for better accuracy)
+const ACTIVITY_WINDOW = 5 * 60 * 1000; // 5 minutes - only heartbeat if active within this window
 
 export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Use refs for internal tracking to prevent re-renders
+  const statusRef = useRef<PresenceStatus>('offline');
+  const lastActivityRef = useRef<number>(Date.now());
+  
+  // Only expose status via state when it ACTUALLY changes
   const [status, setStatus] = useState<PresenceStatus>('offline');
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
-  const [lastActivity, setLastActivity] = useState(new Date());
   const [isUpdating, setIsUpdating] = useState(false);
   
-  const lastActivityUpdateRef = useRef<number>(0);
   const awayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Update presence in database
+  // Update presence in database - only update React state if status ACTUALLY changes
   const updatePresenceInDb = useCallback(async (newStatus: PresenceStatus) => {
     if (!user?.id) return;
+
+    // Skip if status hasn't changed (prevents redundant DB calls and re-renders)
+    if (newStatus === statusRef.current) return;
 
     try {
       const { error } = await supabase
@@ -49,14 +56,17 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
 
       if (!error) {
+        // Update ref immediately
+        statusRef.current = newStatus;
+        // Only update React state (trigger re-render) when status actually changed
         setStatus(newStatus);
       }
-    } catch (error) {
-      console.error('Failed to update presence:', error);
+    } catch {
+      // Silently handle errors
     }
   }, [user?.id]);
 
-  // Update status function
+  // Public update function
   const updateStatus = useCallback((newStatus: PresenceStatus) => {
     updatePresenceInDb(newStatus);
   }, [updatePresenceInDb]);
@@ -81,8 +91,8 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setShowOnlineStatus(show);
         queryClient.invalidateQueries({ queryKey: ['my-presence'] });
       }
-    } catch (error) {
-      console.error('Failed to toggle visibility:', error);
+    } catch {
+      // Silently handle errors
     } finally {
       setIsUpdating(false);
     }
@@ -107,24 +117,31 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchPresence();
   }, [user?.id]);
 
-  // Activity detection and heartbeat
+  // Activity detection and heartbeat - NO status in dependencies
   useEffect(() => {
     if (!user?.id) return;
 
     // Set initial online status
-    updatePresenceInDb('online');
+    statusRef.current = 'online';
     setStatus('online');
+    
+    // Initial DB update
+    supabase
+      .from('user_presence')
+      .upsert({
+        user_id: user.id,
+        status: 'online',
+        last_seen_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+      .then();
 
     const handleActivity = () => {
-      const now = Date.now();
-      setLastActivity(new Date());
+      lastActivityRef.current = Date.now();
 
-      // Throttle: only update if enough time has passed
-      if (now - lastActivityUpdateRef.current > ACTIVITY_THROTTLE) {
-        if (status !== 'online') {
-          updatePresenceInDb('online');
-        }
-        lastActivityUpdateRef.current = now;
+      // If currently away, go back online
+      if (statusRef.current === 'away') {
+        updatePresenceInDb('online');
       }
 
       // Reset away timeout
@@ -145,9 +162,8 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     };
 
-    // Before unload handler
+    // Before unload handler - use sendBeacon for reliability
     const handleBeforeUnload = () => {
-      // Use sendBeacon for reliable offline status
       const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_presence?user_id=eq.${user.id}`;
       const body = JSON.stringify({
         status: 'offline',
@@ -161,22 +177,26 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       );
     };
 
-    // OPTIMIZED: Reduced activity events - only essential ones
+    // Minimal activity events
     const activityEvents = ['mousedown', 'keydown', 'touchstart'];
     activityEvents.forEach(event => {
       window.addEventListener(event, handleActivity, { passive: true });
     });
 
-    // Visibility change
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Before unload
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Start heartbeat with longer interval (5 minutes)
+    // Heartbeat: only if active within last 5 minutes AND tab visible
     heartbeatRef.current = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        updatePresenceInDb('online');
+      const now = Date.now();
+      const timeSinceActivity = now - lastActivityRef.current;
+      
+      // Only send heartbeat if user was recently active
+      if (document.visibilityState === 'visible' && timeSinceActivity <= ACTIVITY_WINDOW) {
+        // Only update if we're not already online (prevents redundant calls)
+        if (statusRef.current !== 'online') {
+          updatePresenceInDb('online');
+        }
       }
     }, HEARTBEAT_INTERVAL);
 
@@ -186,29 +206,24 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, AWAY_TIMEOUT);
 
     return () => {
-      // Cleanup
       activityEvents.forEach(event => {
         window.removeEventListener(event, handleActivity);
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
 
-      if (awayTimeoutRef.current) {
-        clearTimeout(awayTimeoutRef.current);
-      }
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
-      }
+      if (awayTimeoutRef.current) clearTimeout(awayTimeoutRef.current);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
 
-      // Set offline when unmounting
+      // Set offline on unmount
       updatePresenceInDb('offline');
     };
-  }, [user?.id, status, updatePresenceInDb]);
+  }, [user?.id, updatePresenceInDb]); // Removed 'status' from deps!
 
   const value: PresenceContextType = {
     status,
     showOnlineStatus,
-    lastActivity,
+    lastActivity: new Date(lastActivityRef.current),
     updateStatus,
     toggleVisibility,
     isUpdating,
@@ -224,7 +239,6 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 export const usePresence = () => {
   const context = useContext(PresenceContext);
   
-  // Return default values if context is not available (graceful degradation)
   if (!context) {
     return {
       status: 'offline' as const,

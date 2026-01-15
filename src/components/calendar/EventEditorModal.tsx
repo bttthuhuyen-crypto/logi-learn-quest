@@ -284,7 +284,7 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({
     };
 
     if (isEditMode && editEvent) {
-      await updateEvent.mutateAsync({ eventId: editEvent.id, data: formData });
+      await updateEvent.mutateAsync({ eventId: editEvent.id, eventData: formData });
     } else {
       await createEvent.mutateAsync(formData);
     }
