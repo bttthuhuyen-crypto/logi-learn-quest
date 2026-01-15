@@ -10,7 +10,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { PresenceProvider } from "@/contexts/PresenceContext";
 import { LevelUpCelebrationProvider } from "@/contexts/LevelUpCelebrationContext";
 import { ReferralTracker } from "@/components/affiliate/ReferralTracker";
-
+import { ProtectedAdminRoute } from "@/components/auth/ProtectedAdminRoute";
 // Lazy load all pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -85,10 +85,10 @@ const App = () => (
                       <Route path="/" element={<Index />} />
                       <Route path="/auth" element={<Auth />} />
                       <Route path="/auth/callback" element={<AuthCallback />} />
-                      <Route path="/admin" element={<Admin />} />
-                      <Route path="/admin/membership-requests" element={<MembershipRequestsPage />} />
+                      <Route path="/admin" element={<ProtectedAdminRoute><Admin /></ProtectedAdminRoute>} />
+                      <Route path="/admin/membership-requests" element={<ProtectedAdminRoute><MembershipRequestsPage /></ProtectedAdminRoute>} />
                       <Route path="/classroom" element={<Classroom />} />
-                      <Route path="/classroom/edit/:id" element={<CourseEditor />} />
+                      <Route path="/classroom/edit/:id" element={<ProtectedAdminRoute><CourseEditor /></ProtectedAdminRoute>} />
                       <Route path="/classroom/:id" element={<CourseEditor />} />
                       <Route path="/community" element={<Community />} />
                       <Route path="/community/post/:postId" element={<PostDetail />} />
@@ -111,13 +111,13 @@ const App = () => (
                         <Route path="orders" element={<SettingsOrders />} />
                         <Route path="affiliate" element={<SettingsAffiliate />} />
                         <Route path="security" element={<SettingsSecurity />} />
-                        <Route path="admin/general" element={<AdminGeneralSettings />} />
-                        <Route path="admin/categories" element={<AdminCategories />} />
-                        <Route path="admin/plugins" element={<AdminPlugins />} />
-                        <Route path="admin/commission" element={<AdminCommission />} />
-                        <Route path="admin/payments" element={<AdminPayments />} />
-                        <Route path="admin/analytics" element={<AdminAnalytics />} />
-                        <Route path="admin/gamification" element={<AdminGamification />} />
+                        <Route path="admin/general" element={<ProtectedAdminRoute><AdminGeneralSettings /></ProtectedAdminRoute>} />
+                        <Route path="admin/categories" element={<ProtectedAdminRoute><AdminCategories /></ProtectedAdminRoute>} />
+                        <Route path="admin/plugins" element={<ProtectedAdminRoute><AdminPlugins /></ProtectedAdminRoute>} />
+                        <Route path="admin/commission" element={<ProtectedAdminRoute><AdminCommission /></ProtectedAdminRoute>} />
+                        <Route path="admin/payments" element={<ProtectedAdminRoute><AdminPayments /></ProtectedAdminRoute>} />
+                        <Route path="admin/analytics" element={<ProtectedAdminRoute><AdminAnalytics /></ProtectedAdminRoute>} />
+                        <Route path="admin/gamification" element={<ProtectedAdminRoute><AdminGamification /></ProtectedAdminRoute>} />
                       </Route>
                       {/* Legacy redirects */}
                       <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
