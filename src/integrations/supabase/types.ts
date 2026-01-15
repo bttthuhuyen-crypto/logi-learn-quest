@@ -1015,6 +1015,38 @@ export type Database = {
           },
         ]
       }
+      lesson_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          lesson_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          lesson_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "course_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       level_configs: {
         Row: {
           community_id: string
@@ -2432,6 +2464,10 @@ export type Database = {
         }
         Returns: Json
       }
+      award_lesson_completion_points: {
+        Args: { p_lesson_id: string; p_points?: number }
+        Returns: Json
+      }
       calculate_activity_stats: {
         Args: { p_community_id: string; p_user_id: string }
         Returns: Json
@@ -2691,6 +2727,7 @@ export type Database = {
         | "reply_like"
         | "bonus"
         | "admin_grant"
+        | "lesson_completion"
       post_content_type: "text" | "poll"
       post_permission: "all" | "admin_only"
       presence_status: "online" | "away" | "offline"
@@ -2872,6 +2909,7 @@ export const Constants = {
         "reply_like",
         "bonus",
         "admin_grant",
+        "lesson_completion",
       ],
       post_content_type: ["text", "poll"],
       post_permission: ["all", "admin_only"],
