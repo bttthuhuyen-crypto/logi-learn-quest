@@ -5,6 +5,8 @@
  * 
  * CRITICAL: This implements a state machine to prevent re-subscribing
  * when the channel is already subscribing or subscribed.
+ * 
+ * RATE LIMITING: Prevents rapid re-subscription attempts (10s cooldown per table)
  */
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -19,7 +21,8 @@ type TableName =
   | 'post_follows'
   | 'profiles'
   | 'membership_requests'
-  | 'community_members';
+  | 'community_members'
+  | 'events';
 
 interface TableSubscription {
   callbacks: Set<(payload: any) => void>;
@@ -33,6 +36,10 @@ type ChannelStatus = 'idle' | 'subscribing' | 'subscribed';
 let masterChannel: RealtimeChannel | null = null;
 let channelStatus: ChannelStatus = 'idle';
 const tableSubscriptions = new Map<TableName, TableSubscription>();
+
+// RATE LIMITING: Track last subscription attempt per table
+const lastSubscribeAttempt = new Map<TableName, number>();
+const RATE_LIMIT_MS = 10000; // 10 seconds
 
 // Broadcast payload to all callbacks for a specific table
 const broadcastToTable = (table: TableName, payload: any) => {
@@ -90,6 +97,7 @@ const initMasterChannel = () => {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'community_members' }, (payload) => broadcastToTable('community_members', payload))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, (payload) => broadcastToTable('post_likes', payload))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'post_follows' }, (payload) => broadcastToTable('post_follows', payload))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, (payload) => broadcastToTable('events', payload))
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         channelStatus = 'subscribed';
@@ -105,9 +113,7 @@ const initMasterChannel = () => {
  * Subscribe to a table's realtime updates
  * All subscriptions share the same master channel
  * 
- * CRITICAL: This function is idempotent - calling it multiple times
- * with the same callback will only add the callback once, and
- * will NOT create new channels or re-subscribe.
+ * RATE LIMITED: Will skip redundant subscription setup if called within 10s
  * 
  * @param table - The table name to subscribe to
  * @param callback - Callback function when changes occur
@@ -119,8 +125,19 @@ export const subscribeToTable = (
   callback: (payload: any) => void,
   key?: string
 ): (() => void) => {
-  // Ensure master channel is initialized (idempotent)
-  initMasterChannel();
+  const now = Date.now();
+  const lastAttempt = lastSubscribeAttempt.get(table) || 0;
+  
+  // Rate limit check - if subscription exists and was created recently, just add callback
+  const isRateLimited = tableSubscriptions.has(table) && (now - lastAttempt) < RATE_LIMIT_MS;
+  
+  if (!isRateLimited) {
+    // Update rate limit timestamp
+    lastSubscribeAttempt.set(table, now);
+    
+    // Ensure master channel is initialized (idempotent)
+    initMasterChannel();
+  }
   
   // Get or create subscription for this table
   if (!tableSubscriptions.has(table)) {
@@ -170,6 +187,7 @@ export const cleanupAllChannels = () => {
   }
   channelStatus = 'idle';
   tableSubscriptions.clear();
+  lastSubscribeAttempt.clear();
 };
 
 /**

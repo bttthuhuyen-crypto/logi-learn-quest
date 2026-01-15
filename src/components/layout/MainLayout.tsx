@@ -1,4 +1,4 @@
-import { ReactNode, memo, useMemo, CSSProperties } from 'react';
+import { ReactNode, memo, useMemo, useDeferredValue, CSSProperties } from 'react';
 import { Header } from './Header';
 
 export interface MainLayoutProps {
@@ -13,6 +13,9 @@ const mainContainerStyle: CSSProperties = {
 };
 
 const MainLayoutComponent = ({ children, hideHeader = false }: MainLayoutProps) => {
+  // Defer children rendering to prevent blocking navigation
+  const deferredChildren = useDeferredValue(children);
+  
   // Memoize header to prevent re-renders when children change
   const header = useMemo(() => {
     if (hideHeader) return null;
@@ -22,7 +25,7 @@ const MainLayoutComponent = ({ children, hideHeader = false }: MainLayoutProps) 
   return (
     <div className="min-h-screen bg-background">
       {header}
-      <main style={mainContainerStyle}>{children}</main>
+      <main style={mainContainerStyle}>{deferredChildren}</main>
     </div>
   );
 };

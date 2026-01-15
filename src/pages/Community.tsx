@@ -130,7 +130,8 @@ const Community = () => {
     }
   };
 
-  const Sidebar = () => <SidebarWidgets />;
+  // Memoize sidebar to prevent re-renders on every state change
+  const sidebar = useMemo(() => <SidebarWidgets />, []);
 
   return (
     <MainLayout>
@@ -174,7 +175,7 @@ const Community = () => {
           {/* Right Column - Sidebar (30%) - Desktop only */}
           <aside className="hidden lg:block w-[30%] max-w-[320px] flex-shrink-0">
             <div className="sticky top-24">
-              <Sidebar />
+              {sidebar}
             </div>
           </aside>
         </div>
@@ -192,7 +193,7 @@ const Community = () => {
           </SheetTrigger>
           <SheetContent side="right" className="w-[320px] overflow-y-auto">
             <div className="pt-6">
-              <Sidebar />
+              {sidebar}
             </div>
           </SheetContent>
         </Sheet>
