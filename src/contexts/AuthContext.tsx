@@ -49,6 +49,32 @@ const fetchProfileData = async (userId: string): Promise<Profile | null> => {
   return null;
 };
 
+// Fetch profile with retry logic for new signups (handles trigger delay)
+const fetchProfileWithRetry = async (
+  userId: string,
+  maxRetries = 3,
+  initialDelay = 500
+): Promise<Profile | null> => {
+  let profile = await fetchProfileData(userId);
+
+  if (profile) return profile;
+
+  // Profile not found - retry with exponential backoff
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const delay = initialDelay * Math.pow(2, attempt - 1); // 500ms, 1000ms, 2000ms
+    await new Promise(resolve => setTimeout(resolve, delay));
+
+    profile = await fetchProfileData(userId);
+    if (profile) return profile;
+
+    if (import.meta.env.DEV) {
+      console.log(`[Auth] Profile fetch retry ${attempt}/${maxRetries} for user ${userId}`);
+    }
+  }
+
+  return null; // All retries exhausted
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Consolidated state for minimal re-renders
   const [authState, setAuthState] = useState<AuthState>({
@@ -75,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           previousUserIdRef.current = session.user.id;
           previousTokenRef.current = session.access_token;
-          initialProfile = await fetchProfileData(session.user.id);
+          initialProfile = await fetchProfileWithRetry(session.user.id);
         }
 
         // Single batched state update - profile is ready when loading becomes false
@@ -137,7 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           previousUserIdRef.current = newUserId;
           
           // Fetch profile for new user
-          const profile = await fetchProfileData(newUserId);
+          const profile = await fetchProfileWithRetry(newUserId);
           
           setAuthState({
             session,
