@@ -13,9 +13,31 @@ interface UserPresence {
   show_online_status: boolean;
 }
 
+// Activity tracking constants
+const ACTIVE_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const THROTTLE_MS = 5000; // 5 second throttle
+const HEARTBEAT_INTERVAL_MS = 60000; // 60 seconds
+
+// Simple throttle utility
+const createThrottle = <T extends (...args: any[]) => void>(fn: T, ms: number): T => {
+  let lastCall = 0;
+  return ((...args: any[]) => {
+    const now = Date.now();
+    if (now - lastCall >= ms) {
+      lastCall = now;
+      fn(...args);
+    }
+  }) as T;
+};
+
 export const useUserPresence = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Track last user activity
+  const lastActivityRef = useRef<number>(Date.now());
+  const throttledMutateRef = useRef<((status: PresenceStatus) => void) | null>(null);
+  const idleCallbackRef = useRef<number | null>(null);
 
   // Fetch current user's presence settings
   const { data: myPresence } = useQuery({
@@ -80,19 +102,38 @@ export const useUserPresence = () => {
     },
   });
 
-  // Set up presence tracking with requestIdleCallback for non-blocking updates
+  // Set up presence tracking with throttling and activity detection
   useEffect(() => {
     if (!user?.id) return;
 
+    // Create throttled mutate function (5000ms throttle)
+    throttledMutateRef.current = createThrottle((status: PresenceStatus) => {
+      updatePresence.mutate(status);
+    }, THROTTLE_MS);
+
     // Helper to schedule presence update in idle time
     const schedulePresenceUpdate = (status: PresenceStatus) => {
+      // Cancel any pending idle callback
+      if (idleCallbackRef.current !== null) {
+        if ('cancelIdleCallback' in window) {
+          (window as any).cancelIdleCallback(idleCallbackRef.current);
+        }
+        idleCallbackRef.current = null;
+      }
+
       if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(() => {
-          updatePresence.mutate(status);
+        idleCallbackRef.current = (window as any).requestIdleCallback(() => {
+          throttledMutateRef.current?.(status);
+          idleCallbackRef.current = null;
         }, { timeout: 1000 });
       } else {
-        updatePresence.mutate(status);
+        throttledMutateRef.current?.(status);
       }
+    };
+
+    // Track user activity
+    const updateActivity = () => {
+      lastActivityRef.current = Date.now();
     };
 
     // Initialize presence on mount (scheduled in idle time)
@@ -101,6 +142,7 @@ export const useUserPresence = () => {
     // Set up visibility change handler
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        updateActivity();
         schedulePresenceUpdate('online');
       } else {
         schedulePresenceUpdate('away');
@@ -120,29 +162,45 @@ export const useUserPresence = () => {
       navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
     };
 
+    // Activity event listeners (passive for performance)
+    const activityEvents = ['mousemove', 'keydown', 'touchstart', 'scroll'] as const;
+    activityEvents.forEach(event => {
+      window.addEventListener(event, updateActivity, { passive: true });
+    });
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Heartbeat to keep online status fresh - exactly 60 seconds as requested
+    // Heartbeat: runs every 60s, but ONLY updates if user was active in last 5 minutes
     const heartbeat = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        // Use requestIdleCallback to avoid blocking UI thread
-        if ('requestIdleCallback' in window) {
-          (window as any).requestIdleCallback(() => {
-            updatePresence.mutate('online');
-          }, { timeout: 1000 });
-        } else {
-          updatePresence.mutate('online');
-        }
+      const isVisible = document.visibilityState === 'visible';
+      const isRecentlyActive = (Date.now() - lastActivityRef.current) <= ACTIVE_WINDOW_MS;
+      
+      // Only send heartbeat if visible AND recently active
+      if (isVisible && isRecentlyActive) {
+        schedulePresenceUpdate('online');
       }
-    }, 60000);
+    }, HEARTBEAT_INTERVAL_MS);
 
     return () => {
+      // Cleanup activity listeners
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, updateActivity);
+      });
+      
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       clearInterval(heartbeat);
       
-      // Set offline when unmounting
+      // Cancel pending idle callback
+      if (idleCallbackRef.current !== null) {
+        if ('cancelIdleCallback' in window) {
+          (window as any).cancelIdleCallback(idleCallbackRef.current);
+        }
+        idleCallbackRef.current = null;
+      }
+      
+      // Set offline when unmounting (bypass throttle for immediate effect)
       updatePresence.mutate('offline');
     };
   }, [user?.id]);
@@ -178,7 +236,7 @@ export const useUsersPresence = (userIds: string[]) => {
     refetchInterval: 60000, // Exactly 60 seconds
   });
 
-  // Subscribe to shared realtime presence channel
+  // Subscribe to shared realtime presence channel with keyed subscription
   useEffect(() => {
     if (userIds.length === 0) return;
 
@@ -195,12 +253,13 @@ export const useUsersPresence = (userIds: string[]) => {
       }, 500); // 500ms debounce
     };
 
-    // Use shared realtime manager
-    const unsubscribe = subscribeToTable('user_presence', handleUpdate);
+    // Use shared realtime manager with a unique key to prevent listener stacking
+    const unsubscribe = subscribeToTable('user_presence', handleUpdate, `presence:${sortedIds}`);
 
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
+        debounceRef.current = null;
       }
       unsubscribe();
     };
