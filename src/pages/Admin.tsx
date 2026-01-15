@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MembershipRequestsPanel } from '@/components/admin/MembershipRequestsPanel';
 import { MembershipSettingsPanel } from '@/components/admin/MembershipSettingsPanel';
@@ -11,31 +9,10 @@ import { PayoutRequestsPanel } from '@/components/admin/PayoutRequestsPanel';
 import { ChatSettingsPanel } from '@/components/admin/ChatSettingsPanel';
 import { PostReportsPanel } from '@/components/admin/PostReportsPanel';
 import { Shield, Users, Settings, Handshake, Wallet, MessageCircle, FileWarning } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
 
 const Admin = () => {
-  const { language, t } = useLanguage();
-  const { user, loading } = useAuth();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState('requests');
-
-  if (loading || roleLoading) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
 
   return (
     <MainLayout>
