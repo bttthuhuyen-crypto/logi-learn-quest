@@ -23,6 +23,7 @@ type TableName =
 
 interface TableSubscription {
   callbacks: Set<(payload: any) => void>;
+  keyedCallbacks: Map<string, (payload: any) => void>;
 }
 
 // State machine for channel lifecycle
@@ -37,11 +38,20 @@ const tableSubscriptions = new Map<TableName, TableSubscription>();
 const broadcastToTable = (table: TableName, payload: any) => {
   const subscription = tableSubscriptions.get(table);
   if (subscription) {
+    // Call regular callbacks
     subscription.callbacks.forEach(cb => {
       try {
         cb(payload);
       } catch {
         // Silently handle callback errors to prevent breaking other subscribers
+      }
+    });
+    // Call keyed callbacks
+    subscription.keyedCallbacks.forEach(cb => {
+      try {
+        cb(payload);
+      } catch {
+        // Silently handle callback errors
       }
     });
   }
@@ -50,13 +60,13 @@ const broadcastToTable = (table: TableName, payload: any) => {
 // Initialize the master channel with all table subscriptions
 // IDEMPOTENT: Will only create and subscribe once
 const initMasterChannel = () => {
-  // Guard: If channel already exists (regardless of status), do nothing
+  // Guard: If channel already exists, do nothing
   if (masterChannel !== null) {
     return;
   }
   
-  // Guard: If we're already in the process of subscribing, do nothing
-  if (channelStatus === 'subscribing') {
+  // Guard: If we're already subscribing or subscribed, do nothing
+  if (channelStatus !== 'idle') {
     return;
   }
   
@@ -66,7 +76,8 @@ const initMasterChannel = () => {
   masterChannel = supabase
     .channel('master-realtime-channel', {
       config: {
-        broadcast: { self: true },
+        // CRITICAL: self: false prevents processing our own broadcasts
+        broadcast: { self: false },
       },
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => broadcastToTable('posts', payload))
@@ -100,29 +111,45 @@ const initMasterChannel = () => {
  * 
  * @param table - The table name to subscribe to
  * @param callback - Callback function when changes occur
+ * @param key - Optional unique key for deduplication (prevents listener stacking)
  * @returns Cleanup function to unsubscribe
  */
 export const subscribeToTable = (
   table: TableName,
-  callback: (payload: any) => void
+  callback: (payload: any) => void,
+  key?: string
 ): (() => void) => {
   // Ensure master channel is initialized (idempotent)
   initMasterChannel();
   
   // Get or create subscription for this table
   if (!tableSubscriptions.has(table)) {
-    tableSubscriptions.set(table, { callbacks: new Set() });
+    tableSubscriptions.set(table, { 
+      callbacks: new Set(),
+      keyedCallbacks: new Map()
+    });
   }
   
   const subscription = tableSubscriptions.get(table)!;
-  subscription.callbacks.add(callback);
+  
+  if (key) {
+    // Keyed subscription: replace any existing callback with same key
+    subscription.keyedCallbacks.set(key, callback);
+  } else {
+    // Regular subscription: add to Set (auto-dedupes by reference)
+    subscription.callbacks.add(callback);
+  }
   
   // Return cleanup function
   return () => {
-    subscription.callbacks.delete(callback);
+    if (key) {
+      subscription.keyedCallbacks.delete(key);
+    } else {
+      subscription.callbacks.delete(callback);
+    }
     
     // If no more callbacks for this table, remove the subscription entry
-    if (subscription.callbacks.size === 0) {
+    if (subscription.callbacks.size === 0 && subscription.keyedCallbacks.size === 0) {
       tableSubscriptions.delete(table);
     }
     
@@ -151,7 +178,7 @@ export const cleanupAllChannels = () => {
 export const getActiveSubscriptionCount = (): number => {
   let count = 0;
   tableSubscriptions.forEach(sub => {
-    count += sub.callbacks.size;
+    count += sub.callbacks.size + sub.keyedCallbacks.size;
   });
   return count;
 };
