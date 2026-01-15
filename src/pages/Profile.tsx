@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   Camera, 
@@ -18,11 +19,22 @@ import {
   User, 
   Mail, 
   Star, 
-  Trophy,
   Save,
   X,
-  Bell,
+  Settings,
+  Activity as ActivityIcon,
+  FileText,
+  MessageSquare,
 } from 'lucide-react';
+import { MyProgressCard } from '@/components/leaderboard/MyProgressCard';
+import { BadgesCard } from '@/components/gamification/BadgesCard';
+import { ActivityHeatmap } from '@/components/members/ActivityHeatmap';
+import { MemberActivityFeed } from '@/components/members/MemberActivityFeed';
+import { MemberPostsTab } from '@/components/members/MemberPostsTab';
+import { MemberCommentsTab } from '@/components/members/MemberCommentsTab';
+import { useMyProgress } from '@/hooks/useMyProgress';
+import { useMemberActivities, useMemberActivityHeatmap } from '@/hooks/useMemberActivities';
+import { LevelBadge } from '@/components/community/LevelBadge';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -37,6 +49,22 @@ const Profile = () => {
   const [bio, setBio] = useState(profile?.bio || '');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch progress data
+  const { data: myProgress, isLoading: isProgressLoading } = useMyProgress();
+  
+  // Fetch activities
+  const { 
+    data: activitiesData, 
+    isLoading: isActivitiesLoading,
+    hasNextPage,
+    fetchNextPage,
+  } = useMemberActivities(user?.id);
+
+  // Fetch heatmap data
+  const { data: heatmapData, isLoading: isHeatmapLoading } = useMemberActivityHeatmap(user?.id);
+
+  const activities = activitiesData?.pages.flatMap(page => page.data) || [];
 
   // Update local state when profile changes
   React.useEffect(() => {
@@ -78,13 +106,11 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error(language === 'vi' ? 'Vui lòng chọn file ảnh' : 'Please select an image file');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error(language === 'vi' ? 'File không được quá 5MB' : 'File must be less than 5MB');
       return;
@@ -92,23 +118,19 @@ const Profile = () => {
 
     setIsUploadingAvatar(true);
     try {
-      // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: `${publicUrl}?t=${Date.now()}` })
@@ -163,19 +185,18 @@ const Profile = () => {
 
   return (
     <MainLayout>
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">{t.nav.profile}</h1>
-
-        <div className="space-y-6">
-          {/* Avatar Card */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 p-4 md:p-6">
+        {/* Left Column: Profile Info & Tabs (8 columns) */}
+        <div className="md:col-span-8 space-y-6">
+          {/* Profile Header Card */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="flex flex-col sm:flex-row items-start gap-4">
                 {/* Avatar */}
-                <div className="relative group">
-                  <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+                <div className="relative group mx-auto sm:mx-0">
+                  <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
                     <AvatarImage src={profile?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xl">
                       {getInitials(profile?.full_name)}
                     </AvatarFallback>
                   </Avatar>
@@ -185,9 +206,9 @@ const Profile = () => {
                     className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   >
                     {isUploadingAvatar ? (
-                      <Loader2 className="h-6 w-6 text-white animate-spin" />
+                      <Loader2 className="h-5 w-5 text-white animate-spin" />
                     ) : (
-                      <Camera className="h-6 w-6 text-white" />
+                      <Camera className="h-5 w-5 text-white" />
                     )}
                   </button>
                   <input
@@ -197,172 +218,190 @@ const Profile = () => {
                     onChange={handleAvatarChange}
                     className="hidden"
                   />
+                  {/* Level Badge */}
+                  <div className="absolute -bottom-1 -right-1">
+                    <LevelBadge level={profile?.level || 1} size="md" />
+                  </div>
                 </div>
 
                 {/* User Info */}
-                <div className="text-center sm:text-left flex-1">
-                  <h2 className="text-xl font-semibold">
-                    {profile?.full_name || 'User'}
-                  </h2>
-                  <p className="text-muted-foreground">{user.email}</p>
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Star className="h-3 w-3" />
-                      {t.common.level} {profile?.level || 1}
-                    </Badge>
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Trophy className="h-3 w-3" />
-                      {profile?.points || 0} {t.common.points}
-                    </Badge>
-                  </div>
+                <div className="flex-1 text-center sm:text-left">
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="fullName" className="text-xs">{t.auth.fullName}</Label>
+                        <Input
+                          id="fullName"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder={t.auth.fullName}
+                          maxLength={100}
+                          className="max-w-xs"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="bio" className="text-xs">Bio</Label>
+                        <Textarea
+                          id="bio"
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          placeholder={language === 'vi' ? 'Giới thiệu về bản thân...' : 'Tell us about yourself...'}
+                          rows={2}
+                          maxLength={500}
+                          className="max-w-md"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                          {isSaving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                          <Save className="mr-1 h-3 w-3" />
+                          {t.common.save}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSaving}>
+                          <X className="mr-1 h-3 w-3" />
+                          {t.common.cancel}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 justify-center sm:justify-start">
+                        <h2 className="text-xl font-bold">{profile?.full_name || 'User'}</h2>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2"
+                          onClick={() => setIsEditing(true)}
+                        >
+                          {t.common.edit}
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      {profile?.bio && (
+                        <p className="text-sm mt-2 text-muted-foreground line-clamp-2">{profile.bio}</p>
+                      )}
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">
+                        <Badge variant="secondary" className="text-xs">
+                          <Star className="h-3 w-3 mr-1" />
+                          Level {profile?.level || 1}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {profile?.points || 0} {t.common.points}
+                        </Badge>
+                      </div>
+                    </>
+                  )}
                 </div>
+
+                {/* Settings Button */}
+                {!isEditing && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/settings')}
+                    className="hidden sm:flex"
+                  >
+                    <Settings className="h-4 w-4 mr-1" />
+                    {language === 'vi' ? 'Cài đặt' : 'Settings'}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Profile Details Card */}
+          {/* Tabs Section */}
+          <Tabs defaultValue="activity" className="w-full">
+            <TabsList className="bg-transparent border-b rounded-none w-full justify-start h-auto p-0 gap-0">
+              <TabsTrigger 
+                value="activity" 
+                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 py-3 data-[state=active]:bg-transparent"
+              >
+                <ActivityIcon className="h-4 w-4 mr-2" />
+                {language === 'vi' ? 'Hoạt động' : 'Activity'}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="posts"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 py-3 data-[state=active]:bg-transparent"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                {language === 'vi' ? 'Bài viết' : 'Posts'}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="comments"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-4 py-3 data-[state=active]:bg-transparent"
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                {language === 'vi' ? 'Bình luận' : 'Comments'}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="activity" className="mt-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <MemberActivityFeed 
+                    activities={activities}
+                    isLoading={isActivitiesLoading}
+                    hasMore={hasNextPage}
+                    onLoadMore={() => fetchNextPage()}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="posts" className="mt-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <MemberPostsTab userId={user.id} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="comments" className="mt-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <MemberCommentsTab userId={user.id} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Right Column: Gamification (4 columns) */}
+        <div className="md:col-span-4 space-y-6">
+          {/* My Progress Card - Compact */}
+          <MyProgressCard 
+            progress={myProgress} 
+            isLoading={isProgressLoading}
+            variant="compact"
+          />
+
+          {/* Badges Card */}
+          <BadgesCard currentLevel={profile?.level || 1} />
+
+          {/* Activity Heatmap */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">
-                {language === 'vi' ? 'Thông tin cá nhân' : 'Personal Information'}
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <ActivityIcon className="h-4 w-4" />
+                {language === 'vi' ? 'Lịch hoạt động' : 'Activity Calendar'}
               </CardTitle>
-              {!isEditing && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                  {t.common.edit}
-                </Button>
-              )}
             </CardHeader>
-            <CardContent className="space-y-4">
-              {isEditing ? (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">
-                      {t.auth.fullName}
-                    </Label>
-                    <Input
-                      id="fullName"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder={t.auth.fullName}
-                      maxLength={100}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">
-                      {t.auth.email}
-                    </Label>
-                    <Input
-                      id="email"
-                      value={user.email || ''}
-                      disabled
-                      className="bg-muted"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'vi' ? 'Email không thể thay đổi' : 'Email cannot be changed'}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">
-                      {language === 'vi' ? 'Giới thiệu bản thân' : 'Bio'}
-                    </Label>
-                    <Textarea
-                      id="bio"
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      placeholder={language === 'vi' ? 'Hãy giới thiệu về bản thân...' : 'Tell us about yourself...'}
-                      rows={4}
-                      maxLength={500}
-                    />
-                    <p className="text-xs text-muted-foreground text-right">
-                      {bio.length}/500 {t.common.characters}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <Button onClick={handleSave} disabled={isSaving}>
-                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      <Save className="mr-2 h-4 w-4" />
-                      {t.common.save}
-                    </Button>
-                    <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-                      <X className="mr-2 h-4 w-4" />
-                      {t.common.cancel}
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      {t.auth.fullName}
-                    </Label>
-                    <p className="font-medium">{profile?.full_name || '-'}</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      {t.auth.email}
-                    </Label>
-                    <p className="font-medium">{user.email}</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground">
-                      {language === 'vi' ? 'Giới thiệu bản thân' : 'Bio'}
-                    </Label>
-                    <p className="font-medium whitespace-pre-wrap">
-                      {profile?.bio || (language === 'vi' ? 'Chưa có thông tin' : 'No bio yet')}
-                    </p>
-                  </div>
-                </>
-              )}
+            <CardContent>
+              <ActivityHeatmap activities={heatmapData || []} isLoading={isHeatmapLoading} />
             </CardContent>
           </Card>
 
-          {/* Account Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {language === 'vi' ? 'Thông tin tài khoản' : 'Account Information'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">
-                    {language === 'vi' ? 'Ngày tham gia' : 'Joined'}
-                  </Label>
-                  <p className="font-medium">
-                    {user.created_at 
-                      ? formatDate(new Date(user.created_at))
-                      : '-'
-                    }
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground">
-                    {language === 'vi' ? 'Ngôn ngữ' : 'Language'}
-                  </Label>
-                  <p className="font-medium">
-                    {profile?.preferred_language === 'vi' ? '🇻🇳 Tiếng Việt' : '🇬🇧 English'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-border">
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  onClick={() => navigate('/settings/notifications')}
-                >
-                  <Bell className="h-4 w-4 mr-2" />
-                  {t.notificationSettings.title}
-                </Button>
-              </div>
+          {/* Account Info - Mobile settings button */}
+          <Card className="sm:hidden">
+            <CardContent className="pt-4">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate('/settings')}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                {language === 'vi' ? 'Cài đặt' : 'Settings'}
+              </Button>
             </CardContent>
           </Card>
         </div>

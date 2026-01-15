@@ -15,9 +15,11 @@ interface MyProgressCardProps {
   progress: MyProgress | null | undefined;
   isLoading: boolean;
   onRankClick?: (period: '7d' | '30d' | 'all') => void;
+  variant?: 'default' | 'compact';
 }
 
-export function MyProgressCard({ progress, isLoading, onRankClick }: MyProgressCardProps) {
+export function MyProgressCard({ progress, isLoading, onRankClick, variant = 'default' }: MyProgressCardProps) {
+  const isCompact = variant === 'compact';
   const { t, formatNumber } = useLanguage();
   const [animatedProgress, setAnimatedProgress] = useState(0);
 
@@ -36,35 +38,37 @@ export function MyProgressCard({ progress, isLoading, onRankClick }: MyProgressC
   if (isLoading) {
     return (
       <Card className="overflow-hidden">
-        <CardContent className="p-5 space-y-5">
+        <CardContent className={isCompact ? "p-4 space-y-4" : "p-5 space-y-5"}>
           {/* User Info Skeleton */}
           <div className="flex items-center gap-4">
-            <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-full" />
+            <Skeleton className={isCompact ? "h-12 w-12 rounded-full" : "h-16 w-16 sm:h-20 sm:w-20 rounded-full"} />
             <div className="space-y-2 flex-1">
               <Skeleton className="h-5 w-32" />
               <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-5 w-28" />
+              {!isCompact && <Skeleton className="h-5 w-28" />}
             </div>
           </div>
           
           {/* Progress Skeleton */}
           <div className="space-y-2">
             <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-36 mx-auto" />
+            <Skeleton className={isCompact ? "h-2 w-full" : "h-3 w-full"} />
           </div>
 
-          <Separator />
-
-          {/* Ranks Skeleton */}
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-32" />
-            <div className="grid grid-cols-3 gap-2">
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
-            </div>
-          </div>
+          {!isCompact && (
+            <>
+              <Separator />
+              {/* Ranks Skeleton */}
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-32" />
+                <div className="grid grid-cols-3 gap-2">
+                  <Skeleton className="h-20" />
+                  <Skeleton className="h-20" />
+                  <Skeleton className="h-20" />
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     );
@@ -78,37 +82,37 @@ export function MyProgressCard({ progress, isLoading, onRankClick }: MyProgressC
 
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-5 space-y-5">
+      <CardContent className={isCompact ? "p-4 space-y-4" : "p-5 space-y-5"}>
         {/* User Info Section */}
-        <div className="flex items-center gap-4">
+        <div className={`flex items-center ${isCompact ? 'gap-3' : 'gap-4'}`}>
           {/* Avatar with Level Badge */}
           <div className="relative flex-shrink-0">
-            <Avatar className="h-16 w-16 sm:h-20 sm:w-20 ring-2 ring-primary/20">
+            <Avatar className={isCompact ? "h-12 w-12 ring-2 ring-primary/20" : "h-16 w-16 sm:h-20 sm:w-20 ring-2 ring-primary/20"}>
               <AvatarImage src={progress.avatarUrl || undefined} />
-              <AvatarFallback className="text-xl sm:text-2xl font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
+              <AvatarFallback className={`font-semibold bg-gradient-to-br from-primary/20 to-primary/10 ${isCompact ? 'text-base' : 'text-xl sm:text-2xl'}`}>
                 {progress.fullName?.charAt(0) || '?'}
               </AvatarFallback>
             </Avatar>
             <div className="absolute -bottom-1 -right-1">
-              <LevelBadge level={progress.level} size="md" />
+              <LevelBadge level={progress.level} size={isCompact ? "sm" : "md"} />
             </div>
           </div>
 
           {/* User Details */}
-          <div className="flex-1 min-w-0 space-y-1">
-            <h3 className="font-semibold text-lg truncate">{progress.fullName}</h3>
-            <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex-1 min-w-0 space-y-0.5">
+            <h3 className={`font-semibold truncate ${isCompact ? 'text-base' : 'text-lg'}`}>{progress.fullName}</h3>
+            <div className={`flex items-center gap-1.5 flex-wrap ${isCompact ? 'text-xs' : ''}`}>
               <span className={cn('font-medium', getLevelColor(progress.level))}>
                 Level {progress.level}
               </span>
-              <Star className={cn('h-3.5 w-3.5', getLevelColor(progress.level))} fill="currentColor" />
+              <Star className={cn(isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5', getLevelColor(progress.level))} fill="currentColor" />
               <span className={cn('font-medium', getLevelColor(progress.level))}>
                 "{progress.levelName}"
               </span>
             </div>
             {/* Total Points */}
-            <div className="flex items-center gap-1.5 text-primary font-semibold text-lg">
-              <Trophy className="h-4 w-4" />
+            <div className={`flex items-center gap-1.5 text-primary font-semibold ${isCompact ? 'text-sm' : 'text-lg'}`}>
+              <Trophy className={isCompact ? "h-3 w-3" : "h-4 w-4"} />
               <span>{formatNumber(progress.points)} {t.common.points}</span>
             </div>
           </div>
@@ -118,64 +122,69 @@ export function MyProgressCard({ progress, isLoading, onRankClick }: MyProgressC
         {!progress.isMaxLevel ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                Tiến độ đến Level {progress.level + 1} "{nextLevelName}":
+              <span className={`text-muted-foreground ${isCompact ? 'text-xs' : 'text-sm'}`}>
+                {isCompact ? `Đến Lv.${progress.level + 1}` : `Tiến độ đến Level ${progress.level + 1} "${nextLevelName}":`}
               </span>
-              <span className="text-sm font-medium text-primary">
+              <span className={`font-medium text-primary ${isCompact ? 'text-xs' : 'text-sm'}`}>
                 {progress.progressPercent}%
               </span>
             </div>
             <div className="relative">
               <Progress 
                 value={animatedProgress} 
-                className="h-3 transition-all duration-700 ease-out" 
+                className={`${isCompact ? 'h-2' : 'h-3'} transition-all duration-700 ease-out`}
               />
             </div>
-            <p className="text-xs text-muted-foreground text-center">
-              Còn <span className="font-medium text-foreground">{formatNumber(progress.pointsToNextLevel)}</span> điểm nữa ({formatNumber(progress.points)} / {formatNumber(progress.nextLevelPoints)})
-            </p>
+            {!isCompact && (
+              <p className="text-xs text-muted-foreground text-center">
+                Còn <span className="font-medium text-foreground">{formatNumber(progress.pointsToNextLevel)}</span> điểm nữa ({formatNumber(progress.points)} / {formatNumber(progress.nextLevelPoints)})
+              </p>
+            )}
           </div>
         ) : (
-          <div className="text-center py-3 px-4 rounded-lg bg-gradient-to-r from-yellow-400/20 to-amber-500/20 border border-amber-400/30">
-            <span className="text-sm font-semibold text-amber-600 dark:text-amber-400 flex items-center justify-center gap-2">
-              <Trophy className="h-5 w-5" />
-              🏆 Bạn đã đạt level cao nhất!
+          <div className={`text-center rounded-lg bg-gradient-to-r from-yellow-400/20 to-amber-500/20 border border-amber-400/30 ${isCompact ? 'py-2 px-3' : 'py-3 px-4'}`}>
+            <span className={`font-semibold text-amber-600 dark:text-amber-400 flex items-center justify-center gap-2 ${isCompact ? 'text-xs' : 'text-sm'}`}>
+              <Trophy className={isCompact ? "h-4 w-4" : "h-5 w-5"} />
+              🏆 {isCompact ? 'Max Level!' : 'Bạn đã đạt level cao nhất!'}
             </span>
           </div>
         )}
 
-        <Separator />
-
-        {/* Ranks Section */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-            <ChartBar className="h-4 w-4" />
-            📊 Xếp hạng của bạn:
-          </h4>
-          
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <RankCard
-              label={t.leaderboard.last7Days}
-              rank={progress.rank7d}
-              points={progress.points7d}
-              icon={<Trophy className="h-4 w-4" />}
-              onClick={() => onRankClick?.('7d')}
-            />
-            <RankCard
-              label={t.leaderboard.last30Days}
-              rank={progress.rank30d}
-              points={progress.points30d}
-              icon={<Medal className="h-4 w-4" />}
-              onClick={() => onRankClick?.('30d')}
-            />
-            <RankCard
-              label={t.leaderboard.allTime}
-              rank={progress.rankAll}
-              icon={<Award className="h-4 w-4" />}
-              onClick={() => onRankClick?.('all')}
-            />
-          </div>
-        </div>
+        {/* Ranks Section - hidden in compact mode */}
+        {!isCompact && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                <ChartBar className="h-4 w-4" />
+                📊 Xếp hạng của bạn:
+              </h4>
+              
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <RankCard
+                  label={t.leaderboard.last7Days}
+                  rank={progress.rank7d}
+                  points={progress.points7d}
+                  icon={<Trophy className="h-4 w-4" />}
+                  onClick={() => onRankClick?.('7d')}
+                />
+                <RankCard
+                  label={t.leaderboard.last30Days}
+                  rank={progress.rank30d}
+                  points={progress.points30d}
+                  icon={<Medal className="h-4 w-4" />}
+                  onClick={() => onRankClick?.('30d')}
+                />
+                <RankCard
+                  label={t.leaderboard.allTime}
+                  rank={progress.rankAll}
+                  icon={<Award className="h-4 w-4" />}
+                  onClick={() => onRankClick?.('all')}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
