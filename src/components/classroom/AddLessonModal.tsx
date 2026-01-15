@@ -8,11 +8,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { uploadCourseAsset, CourseLesson } from '@/hooks/useCourses';
-import { Upload, Loader2, Globe, Users, Award } from 'lucide-react';
+import { Upload, Loader2, Globe, Users, Award, MessageSquare, X, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PostSelectionModal } from '@/components/community/PostSelectionModal';
 
 interface AddLessonModalProps {
   open: boolean;
@@ -29,11 +31,17 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [accessLevel, setAccessLevel] = useState<'public' | 'member' | 'level'>('member');
   const [requiredLevel, setRequiredLevel] = useState('3');
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Discussion post state
+  const [discussionPostId, setDiscussionPostId] = useState<string | null>(null);
+  const [selectedPostTitle, setSelectedPostTitle] = useState<string | null>(null);
+  const [postModalOpen, setPostModalOpen] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,6 +59,16 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
     setUploading(false);
   };
 
+  const handleSelectPost = (postId: string, postTitle: string) => {
+    setDiscussionPostId(postId);
+    setSelectedPostTitle(postTitle);
+  };
+
+  const handleClearPost = () => {
+    setDiscussionPostId(null);
+    setSelectedPostTitle(null);
+  };
+
   const handleSubmit = async () => {
     if (!title.trim()) {
       toast.error(language === 'vi' ? 'Vui lòng nhập tên bài học' : 'Please enter lesson name');
@@ -60,16 +78,21 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
     setSubmitting(true);
     await onSubmit({
       title,
+      description: description.trim() || null,
       access_level: accessLevel,
       required_level: accessLevel === 'level' ? parseInt(requiredLevel) : 1,
-      thumbnail_url: thumbnailUrl
+      thumbnail_url: thumbnailUrl,
+      discussion_post_id: discussionPostId
     });
 
     // Reset form
     setTitle('');
+    setDescription('');
     setAccessLevel('member');
     setRequiredLevel('3');
     setThumbnailUrl(null);
+    setDiscussionPostId(null);
+    setSelectedPostTitle(null);
     setSubmitting(false);
     onOpenChange(false);
   };
@@ -103,7 +126,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {language === 'vi' ? 'Thêm bài học' : 'Add Lesson'}
@@ -120,6 +143,21 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
               placeholder={language === 'vi' ? 'Nhập tên bài học...' : 'Enter lesson name...'}
             />
             <p className="text-xs text-muted-foreground text-right">{title.length}/150</p>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label>{language === 'vi' ? 'Mô tả ngắn' : 'Short Description'}</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+              placeholder={language === 'vi' 
+                ? 'Mô tả ngắn gọn nội dung bài học (tối ưu SEO)...' 
+                : 'Brief description of the lesson (SEO optimized)...'
+              }
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground text-right">{description.length}/200</p>
           </div>
 
           {/* Access Level */}
@@ -166,6 +204,41 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
               />
             </div>
           )}
+
+          {/* Discussion Post */}
+          <div className="space-y-2">
+            <Label>{language === 'vi' ? 'Bài thảo luận' : 'Discussion Post'}</Label>
+            <p className="text-xs text-muted-foreground">
+              {language === 'vi' 
+                ? 'Liên kết với bài viết cộng đồng để học viên thảo luận' 
+                : 'Link to community post for student discussions'}
+            </p>
+            
+            {selectedPostTitle ? (
+              <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/30">
+                <MessageSquare className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="flex-1 text-sm truncate">{selectedPostTitle}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0"
+                  onClick={handleClearPost}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={() => setPostModalOpen(true)}
+                className="w-full"
+                type="button"
+              >
+                <Link2 className="h-4 w-4 mr-2" />
+                {language === 'vi' ? 'Chọn bài viết' : 'Select Post'}
+              </Button>
+            )}
+          </div>
 
           {/* Thumbnail */}
           <div className="space-y-2">
@@ -232,6 +305,12 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({
           </div>
         </div>
       </DialogContent>
+
+      <PostSelectionModal
+        open={postModalOpen}
+        onOpenChange={setPostModalOpen}
+        onSelectPost={handleSelectPost}
+      />
     </Dialog>
   );
 };
