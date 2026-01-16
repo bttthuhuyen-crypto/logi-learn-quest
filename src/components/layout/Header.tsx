@@ -1,11 +1,12 @@
 import { useState, memo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Search, Menu, X, Shield, MessageCircle, ChevronDown, Compass } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { usePendingRequestsCount } from '@/hooks/usePendingRequestsCount';
+import { useMyJoinedCommunities } from '@/hooks/useMyJoinedCommunities';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -42,11 +44,20 @@ const HeaderComponent = () => {
   const { t } = useLanguage();
   const { isAdmin } = useUserRole();
   const { pendingCount } = usePendingRequestsCount();
+  const { data: joinedCommunities = [] } = useMyJoinedCommunities();
   const location = useLocation();
   const navigate = useNavigate();
+  const { communitySlug } = useParams<{ communitySlug: string }>();
 
   // Filter nav items based on role
   const visibleNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
+
+  // Find current community from URL or default
+  const currentCommunity = communitySlug 
+    ? joinedCommunities.find(c => c.slug === communitySlug) 
+    : joinedCommunities[0];
+  
+  const displayName = currentCommunity?.name || '10X LOGISTICS';
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -54,22 +65,52 @@ const HeaderComponent = () => {
         {/* Logo with Community Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
-              <span className="text-xl font-bold tracking-tight">10X LOGISTICS</span>
+            <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              {currentCommunity?.logo_url ? (
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={currentCommunity.logo_url} alt={currentCommunity.name} />
+                  <AvatarFallback className="text-xs font-bold bg-primary text-primary-foreground">
+                    {currentCommunity.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary">
+                    {displayName.substring(0, 2).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <span className="text-lg font-bold tracking-tight hidden sm:inline">{displayName}</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuItem onClick={() => navigate('/community')}>
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
-                  <span className="text-xs font-bold text-primary">10X</span>
-                </div>
-                <span className="font-medium">10X LOGISTICS</span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/discover')}>
+          <DropdownMenuContent align="start" className="w-64">
+            {joinedCommunities.length > 0 ? (
+              <>
+                {joinedCommunities.map((community) => (
+                  <DropdownMenuItem 
+                    key={community.id} 
+                    onClick={() => navigate(`/c/${community.slug}`)}
+                    className={cn(
+                      "cursor-pointer",
+                      communitySlug === community.slug && "bg-accent"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={community.logo_url || undefined} alt={community.name} />
+                        <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+                          {community.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium truncate">{community.name}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
+            <DropdownMenuItem onClick={() => navigate('/discover')} className="cursor-pointer">
               <Compass className="h-4 w-4 mr-2" />
               Khám phá cộng đồng
             </DropdownMenuItem>

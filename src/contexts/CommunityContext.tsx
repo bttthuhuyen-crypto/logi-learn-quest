@@ -15,6 +15,7 @@ interface Community {
   price: number;
   price_period: string;
   created_at: string;
+  requires_approval: boolean | null;
 }
 
 interface CommunityContextType {
