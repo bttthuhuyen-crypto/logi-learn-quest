@@ -56,10 +56,17 @@ const Classroom = () => {
     <MainLayout>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h1 className="text-2xl font-bold">
-            {language === 'vi' ? 'Học tập' : 'Classroom'}
-          </h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">
+              {language === 'vi' ? 'Khóa học' : 'Courses'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {language === 'vi' 
+                ? 'Khám phá các khóa học giúp bạn phát triển kỹ năng và kiến thức mới.' 
+                : 'Discover courses to develop your skills and knowledge.'}
+            </p>
+          </div>
           <div className="flex items-center gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -70,9 +77,6 @@ const Classroom = () => {
                 className="pl-10 w-64"
               />
             </div>
-            <Button variant="outline" size="icon">
-              <ArrowUpDown className="h-4 w-4" />
-            </Button>
             {isAdmin && (
               <div className="flex items-center gap-2">
                 <Label htmlFor="edit-mode" className="text-sm">
@@ -85,11 +89,11 @@ const Classroom = () => {
         </div>
 
         {/* Course Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Create Course Card - Admin Only */}
           {isAdmin && (
             <div
-              className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-8 cursor-pointer hover:border-primary/50 transition-colors min-h-[280px]"
+              className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-8 cursor-pointer hover:border-primary/50 transition-colors min-h-[380px]"
               onClick={() => setCreateModalOpen(true)}
             >
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
