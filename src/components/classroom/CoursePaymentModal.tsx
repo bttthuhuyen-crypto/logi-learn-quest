@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -85,7 +83,6 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
           { duration: 5000 }
         );
         onOpenChange(false);
-        // Generate new order code for next time
         setOrderCode(generateOrderCode());
       }
     } catch (err) {
@@ -99,38 +96,35 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {language === 'vi' ? 'Thanh toán khóa học' : 'Course Payment'}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+        {/* Course Thumbnail - Full width, 16:9 */}
+        <div className="relative aspect-video w-full bg-muted">
+          {course.thumbnail_url ? (
+            <img
+              src={course.thumbnail_url}
+              alt={course.title}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+              <BookOpen className="h-16 w-16 text-primary/30" />
+            </div>
+          )}
+        </div>
 
-        <div className="space-y-4">
-          {/* Course Info */}
-          <div className="flex gap-3 p-3 bg-muted rounded-lg">
-            <div className="w-20 h-12 rounded overflow-hidden bg-primary/10 flex-shrink-0">
-              {course.thumbnail_url ? (
-                <img
-                  src={course.thumbnail_url}
-                  alt={course.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <BookOpen className="h-5 w-5 text-primary/50" />
-                </div>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-sm line-clamp-1">{course.title}</h4>
-              <p className="text-lg font-bold text-primary">
-                {formatCurrency(course.price)}
-              </p>
-            </div>
+        {/* Content */}
+        <div className="p-6 space-y-5">
+          {/* Course Title & Price - Centered */}
+          <div className="text-center space-y-2">
+            <h3 className="font-semibold text-xl">{course.title}</h3>
+            <p className="text-2xl font-bold text-primary">
+              {formatCurrency(course.price)}
+            </p>
           </div>
 
-          {/* QR Code */}
+          {/* QR Code - Larger */}
           {settingsLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -140,12 +134,14 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
               <img
                 src={paymentSettings.qr_image_url}
                 alt="Payment QR Code"
-                className="w-48 h-48 object-contain border rounded-lg"
+                className="w-56 h-56 object-contain rounded-lg shadow-sm"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           ) : (
             <div className="flex justify-center py-4">
-              <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed">
+              <div className="w-56 h-56 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed">
                 <span className="text-muted-foreground text-sm text-center px-4">
                   {language === 'vi' ? 'Chưa có mã QR' : 'No QR code available'}
                 </span>
@@ -153,43 +149,43 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
             </div>
           )}
 
-          {/* Bank Info */}
+          {/* Bank Info - Improved styling */}
           {paymentSettings && (
-            <div className="space-y-2 p-3 bg-muted/50 rounded-lg text-sm">
-              <div className="flex justify-between">
+            <div className="space-y-3 p-4 bg-muted/50 rounded-xl text-sm">
+              <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">
-                  {language === 'vi' ? 'Ngân hàng:' : 'Bank:'}
+                  {language === 'vi' ? 'Ngân hàng' : 'Bank'}
                 </span>
-                <span className="font-medium">{paymentSettings.bank_name}</span>
+                <span className="font-semibold">{paymentSettings.bank_name}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">
-                  {language === 'vi' ? 'Chủ TK:' : 'Account holder:'}
+                  {language === 'vi' ? 'Chủ TK' : 'Account holder'}
                 </span>
-                <span className="font-medium">{paymentSettings.account_holder}</span>
+                <span className="font-semibold">{paymentSettings.account_holder}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">
-                  {language === 'vi' ? 'Số TK:' : 'Account number:'}
+                  {language === 'vi' ? 'Số TK' : 'Account number'}
                 </span>
-                <span className="font-medium font-mono">{paymentSettings.account_number}</span>
+                <span className="font-semibold font-mono tracking-wide">{paymentSettings.account_number}</span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t">
+              <div className="flex justify-between items-center pt-3 border-t border-border/50">
                 <span className="text-muted-foreground">
-                  {language === 'vi' ? 'Nội dung CK:' : 'Transfer note:'}
+                  {language === 'vi' ? 'Nội dung CK' : 'Transfer note'}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-primary font-mono">{orderCode}</span>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className="h-7 w-7 hover:bg-primary/10"
                     onClick={handleCopyOrderCode}
                   >
                     {copied ? (
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-4 w-4 text-muted-foreground" />
                     )}
                   </Button>
                 </div>
@@ -204,19 +200,22 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
               : 'Please transfer the exact amount with the correct note for fastest confirmation.'}
           </p>
 
-          {/* Submit Button */}
+          {/* Submit Button with icon */}
           <Button
-            className="w-full"
+            className="w-full h-12 text-base gap-2"
             onClick={handleConfirmPayment}
             disabled={isSubmitting || !user}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
                 {language === 'vi' ? 'Đang xử lý...' : 'Processing...'}
               </>
             ) : (
-              language === 'vi' ? 'Xác nhận đã thanh toán' : 'Confirm Payment'
+              <>
+                <CheckCircle className="h-5 w-5" />
+                {language === 'vi' ? 'Xác nhận đã thanh toán' : 'Confirm Payment'}
+              </>
             )}
           </Button>
 

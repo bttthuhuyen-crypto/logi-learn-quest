@@ -49,13 +49,13 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, isEditMode, onLo
           </div>
         )}
         
-        {/* Lock Overlay for Paid Courses */}
+        {/* Lock Overlay for Paid Courses - Skool style */}
         {isLocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-            <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center mb-2">
-              <Lock className="h-6 w-6 text-white" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-t from-black/80 via-black/50 to-black/30">
+            <div className="w-16 h-16 rounded-full bg-black/70 backdrop-blur-sm flex items-center justify-center mb-3 border border-white/20">
+              <Lock className="h-8 w-8 text-white" />
             </div>
-            <span className="text-white text-sm font-medium px-3 py-1 rounded-full bg-black/60">
+            <span className="text-white text-sm font-semibold px-5 py-2 rounded-full bg-black/60 backdrop-blur-sm border border-white/30">
               {language === 'vi' ? 'Mở khóa ' : 'Unlock for '}
               {formatCurrency(course.price)}
             </span>
