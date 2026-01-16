@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { useCourses } from '@/hooks/useCourses';
+import { useCourses, Course } from '@/hooks/useCourses';
 import { useUserRole } from '@/hooks/useUserRole';
 import { CourseCard } from '@/components/classroom/CourseCard';
 import { CreateCourseModal } from '@/components/classroom/CreateCourseModal';
+import { CoursePaymentModal } from '@/components/classroom/CoursePaymentModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -19,6 +20,8 @@ const Classroom = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   const handleCreateCourse = async (course: Parameters<typeof createCourse>[0]) => {
     const { error } = await createCourse(course);
@@ -27,6 +30,11 @@ const Classroom = () => {
     } else {
       toast.success(language === 'vi' ? 'Đã tạo khóa học' : 'Course created');
     }
+  };
+
+  const handleLockedCourseClick = (course: Course) => {
+    setSelectedCourse(course);
+    setPaymentModalOpen(true);
   };
 
   const filteredCourses = courses.filter(course =>
@@ -93,7 +101,12 @@ const Classroom = () => {
 
           {/* Course Cards */}
           {filteredCourses.map((course) => (
-            <CourseCard key={course.id} course={course} isEditMode={isAdmin && editMode} />
+            <CourseCard 
+              key={course.id} 
+              course={course} 
+              isEditMode={isAdmin && editMode}
+              onLockedClick={handleLockedCourseClick}
+            />
           ))}
         </div>
 
@@ -108,6 +121,12 @@ const Classroom = () => {
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
         onSubmit={handleCreateCourse}
+      />
+
+      <CoursePaymentModal
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        course={selectedCourse}
       />
     </MainLayout>
   );
