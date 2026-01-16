@@ -9,7 +9,7 @@ import { usePaymentSettings } from '@/hooks/useCourseAccess';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Copy, CheckCircle, BookOpen } from 'lucide-react';
+import { Loader2, Copy, CheckCircle, Lock, X } from 'lucide-react';
 import { Course } from '@/hooks/useCourses';
 
 interface CoursePaymentModalProps {
@@ -96,37 +96,59 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
-        {/* Course Thumbnail - Full width, 16:9 */}
-        <div className="relative aspect-video w-full bg-muted">
-          {course.thumbnail_url ? (
-            <img
-              src={course.thumbnail_url}
-              alt={course.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-              <BookOpen className="h-16 w-16 text-primary/30" />
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden [&>button]:hidden">
+        {/* Hero Section - Dark background like Skool */}
+        <div className="relative bg-black text-white py-8 px-6 overflow-hidden">
+          {/* Background thumbnail (blurred) */}
+          {course.thumbnail_url && (
+            <div className="absolute inset-0 opacity-20">
+              <img 
+                src={course.thumbnail_url} 
+                alt=""
+                className="w-full h-full object-cover blur-sm" 
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           )}
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-5">
-          {/* Course Title & Price - Centered */}
-          <div className="text-center space-y-2">
-            <h3 className="font-semibold text-xl">{course.title}</h3>
-            <p className="text-2xl font-bold text-primary">
-              {formatCurrency(course.price)}
+          
+          {/* Close button */}
+          <button 
+            onClick={() => onOpenChange(false)}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors z-10"
+          >
+            <X className="h-5 w-5 text-white/60" />
+          </button>
+          
+          {/* Content overlay */}
+          <div className="relative flex flex-col items-center text-center space-y-3">
+            {/* Lock icon - rounded square like Skool */}
+            <div className="w-14 h-14 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center border border-white/20">
+              <Lock className="h-7 w-7 text-white" />
+            </div>
+            
+            {/* Course title */}
+            <h2 className="text-xl font-bold">{course.title}</h2>
+            
+            {/* Unlock price */}
+            <p className="text-white/80">
+              Unlock for {formatCurrency(course.price)}
             </p>
           </div>
+        </div>
 
-          {/* QR Code - Larger */}
+        {/* Content Section - White background */}
+        <div className="p-6 space-y-5 bg-background">
+          {/* Course description */}
+          {course.description && (
+            <p className="text-muted-foreground text-sm text-center line-clamp-2">
+              {course.description}
+            </p>
+          )}
+
+          {/* QR Code - Centered */}
           {settingsLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-6">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : paymentSettings?.qr_image_url ? (
@@ -134,14 +156,14 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
               <img
                 src={paymentSettings.qr_image_url}
                 alt="Payment QR Code"
-                className="w-56 h-56 object-contain rounded-lg shadow-sm"
+                className="w-52 h-52 object-contain"
                 loading="lazy"
                 decoding="async"
               />
             </div>
           ) : (
             <div className="flex justify-center py-4">
-              <div className="w-56 h-56 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed">
+              <div className="w-52 h-52 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed">
                 <span className="text-muted-foreground text-sm text-center px-4">
                   {language === 'vi' ? 'Chưa có mã QR' : 'No QR code available'}
                 </span>
@@ -149,9 +171,9 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
             </div>
           )}
 
-          {/* Bank Info - Improved styling */}
+          {/* Bank Info - Compact style */}
           {paymentSettings && (
-            <div className="space-y-3 p-4 bg-muted/50 rounded-xl text-sm">
+            <div className="space-y-2 p-4 bg-muted/50 rounded-xl text-sm">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">
                   {language === 'vi' ? 'Ngân hàng' : 'Bank'}
@@ -170,7 +192,7 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
                 </span>
                 <span className="font-semibold font-mono tracking-wide">{paymentSettings.account_number}</span>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-border/50">
+              <div className="flex justify-between items-center pt-2 border-t border-border/50">
                 <span className="text-muted-foreground">
                   {language === 'vi' ? 'Nội dung CK' : 'Transfer note'}
                 </span>
@@ -193,28 +215,20 @@ export const CoursePaymentModal: React.FC<CoursePaymentModalProps> = ({
             </div>
           )}
 
-          {/* Warning */}
-          <p className="text-xs text-muted-foreground text-center">
-            {language === 'vi'
-              ? 'Vui lòng chuyển khoản đúng số tiền và nội dung để được xác nhận nhanh nhất.'
-              : 'Please transfer the exact amount with the correct note for fastest confirmation.'}
-          </p>
-
-          {/* Submit Button with icon */}
+          {/* BUY NOW Button - Yellow like Skool */}
           <Button
-            className="w-full h-12 text-base gap-2"
+            className="w-full h-14 text-base font-bold bg-yellow-400 hover:bg-yellow-500 text-black border-0"
             onClick={handleConfirmPayment}
             disabled={isSubmitting || !user}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
                 {language === 'vi' ? 'Đang xử lý...' : 'Processing...'}
               </>
             ) : (
               <>
-                <CheckCircle className="h-5 w-5" />
-                {language === 'vi' ? 'Xác nhận đã thanh toán' : 'Confirm Payment'}
+                {language === 'vi' ? 'MUA NGAY' : 'BUY NOW'} {formatCurrency(course.price)}
               </>
             )}
           </Button>
