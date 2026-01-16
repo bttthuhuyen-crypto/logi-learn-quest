@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Globe, Lock, Loader2 } from 'lucide-react';
+import { ArrowLeft, Globe, Lock, Loader2, Shield } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,9 +15,12 @@ import { useCommunityCategories } from '@/hooks/useCommunityCategories';
 import { useCreateCommunity, CommunityFormData } from '@/hooks/useCreateCommunity';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useUserRole } from '@/hooks/useUserRole';
+import { toast } from 'sonner';
 
 export default function CreateCommunity() {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { data: categories, isLoading: categoriesLoading } = useCommunityCategories();
   const { createCommunity, generateSlug, isLoading } = useCreateCommunity();
@@ -44,6 +47,14 @@ export default function CreateCommunity() {
       navigate('/auth', { state: { from: '/community/create' } });
     }
   }, [user, authLoading, navigate]);
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (!authLoading && !roleLoading && user && !isAdmin) {
+      toast.error('Bạn không có quyền tạo cộng đồng');
+      navigate('/discover');
+    }
+  }, [user, authLoading, roleLoading, isAdmin, navigate]);
 
   // Auto-generate slug from name
   useEffect(() => {
@@ -76,11 +87,26 @@ export default function CreateCommunity() {
     }));
   };
 
-  if (authLoading) {
+  if (authLoading || roleLoading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <Shield className="w-16 h-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold">Không có quyền truy cập</h2>
+          <p className="text-muted-foreground">Chỉ admin mới có thể tạo cộng đồng</p>
+          <Button onClick={() => navigate('/discover')} className="mt-4">
+            Quay lại khám phá
+          </Button>
         </div>
       </MainLayout>
     );

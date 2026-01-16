@@ -2711,6 +2711,14 @@ export type Database = {
         Args: { blocked_user_id: string; blocker_user_id: string }
         Returns: boolean
       }
+      is_community_admin: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_community_member: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
       log_activity: {
         Args: {
           p_activity_type: Database["public"]["Enums"]["activity_type"]
