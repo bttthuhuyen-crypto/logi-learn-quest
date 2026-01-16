@@ -1562,6 +1562,39 @@ export type Database = {
           },
         ]
       }
+      payment_qr_settings: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          qr_image_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          qr_image_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          qr_image_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payout_requests: {
         Row: {
           amount: number
