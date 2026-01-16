@@ -32,6 +32,8 @@ const About = lazy(() => import("./pages/About"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Messenger = lazy(() => import("./pages/Messenger"));
 const MapPage = lazy(() => import("./pages/Map"));
+const Discover = lazy(() => import("./pages/Discover"));
+const CommunityRouter = lazy(() => import("./pages/CommunityRouter"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Settings = lazy(() => import("./pages/Settings"));
 
@@ -102,6 +104,8 @@ const App = () => (
                       <Route path="/leaderboard" element={<Leaderboard />} />
                       <Route path="/map" element={<MapPage />} />
                       <Route path="/about" element={<About />} />
+                      <Route path="/discover" element={<Discover />} />
+                      <Route path="/c/:communitySlug/*" element={<CommunityRouter />} />
                       <Route path="/notifications" element={<Notifications />} />
                       <Route path="/messages" element={<Messenger />} />
                       <Route path="/messages/:conversationId" element={<Messenger />} />

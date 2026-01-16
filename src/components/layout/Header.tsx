@@ -1,11 +1,18 @@
 import { useState, memo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, X, Shield, MessageCircle } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Menu, X, Shield, MessageCircle, ChevronDown, Compass } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -36,6 +43,7 @@ const HeaderComponent = () => {
   const { isAdmin } = useUserRole();
   const { pendingCount } = usePendingRequestsCount();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Filter nav items based on role
   const visibleNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
@@ -43,10 +51,30 @@ const HeaderComponent = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold tracking-tight">10X LOGISTICS</span>
-        </Link>
+        {/* Logo with Community Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+              <span className="text-xl font-bold tracking-tight">10X LOGISTICS</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuItem onClick={() => navigate('/community')}>
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary">10X</span>
+                </div>
+                <span className="font-medium">10X LOGISTICS</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/discover')}>
+              <Compass className="h-4 w-4 mr-2" />
+              Khám phá cộng đồng
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-1">

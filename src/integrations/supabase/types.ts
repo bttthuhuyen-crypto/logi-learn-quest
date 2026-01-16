@@ -318,46 +318,85 @@ export type Database = {
       }
       communities: {
         Row: {
+          category: string | null
           cover_image_url: string | null
           created_at: string
           description: string | null
+          featured: boolean | null
           id: string
           is_public: boolean | null
           logo_url: string | null
           member_count: number | null
           name: string
           owner_id: string
+          price: number | null
+          price_period: string | null
           requires_approval: boolean | null
           slug: string
           updated_at: string
         }
         Insert: {
+          category?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          featured?: boolean | null
           id?: string
           is_public?: boolean | null
           logo_url?: string | null
           member_count?: number | null
           name: string
           owner_id: string
+          price?: number | null
+          price_period?: string | null
           requires_approval?: boolean | null
           slug: string
           updated_at?: string
         }
         Update: {
+          category?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          featured?: boolean | null
           id?: string
           is_public?: boolean | null
           logo_url?: string | null
           member_count?: number | null
           name?: string
           owner_id?: string
+          price?: number | null
+          price_period?: string | null
           requires_approval?: boolean | null
           slug?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      community_categories: {
+        Row: {
+          created_at: string | null
+          emoji: string | null
+          id: string
+          name: string
+          order_index: number | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          name: string
+          order_index?: number | null
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          slug?: string
         }
         Relationships: []
       }
