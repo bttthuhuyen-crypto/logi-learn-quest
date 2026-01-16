@@ -1,13 +1,16 @@
 import { useParams, Navigate } from 'react-router-dom';
 import { CommunityProvider, useCommunity } from '@/contexts/CommunityContext';
 import Community from '@/pages/Community';
+import CommunityLanding from '@/pages/CommunityLanding';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { useCommunityMembership } from '@/hooks/useCommunityMembership';
 
 function CommunityContent() {
   const { community, isLoading, error } = useCommunity();
+  const { data: membership, isLoading: membershipLoading } = useCommunityMembership(community?.id || null);
 
-  if (isLoading) {
+  if (isLoading || membershipLoading) {
     return (
       <MainLayout>
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -23,8 +26,13 @@ function CommunityContent() {
     return <Navigate to="/discover" replace />;
   }
 
-  // Render the Community page with the current community context
-  return <Community />;
+  // If user is a member, show the community page
+  if (membership?.isMember) {
+    return <Community />;
+  }
+
+  // Otherwise, show the landing page for non-members
+  return <CommunityLanding />;
 }
 
 export default function CommunityRouter() {
